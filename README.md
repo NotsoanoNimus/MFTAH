@@ -1,4 +1,6 @@
 # Media For Tamper-Averse Humans (MFTAH)
+![image](https://github.com/user-attachments/assets/293c27ec-88b4-4c6e-a24b-ea7c3f9d63e3)
+
 Encrypt and decrypt encapsulated AES-256 boot or transfer payloads with NO DEPENDENCIES.
 
 This is a file format which encrypts/decrypts data payloads for generic use. It's not really anything novel, and its primary use is as a bootloader protocol from MBR/UEFI since it has no dependencies (not even the Standard Library).
