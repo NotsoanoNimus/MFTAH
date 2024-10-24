@@ -18,7 +18,7 @@
 #
 #
 
-SUPPARCHS		:= x86_64
+SUPPARCHS		= x86_64
 
 # Must be set to one of the members from SUPPARCHS.
 ARCH			:= x86_64
@@ -33,10 +33,10 @@ SRC_DIR			= src
 INCLUDE_DIR		= src/include
 BUILD_DIR		= build
 
-INCS		= -I./ -I./src -I$(INCLUDE_DIR)
+INCS			= -I./ -I./src -I$(INCLUDE_DIR)
 
 OPTIM			= -O3
-CFLAGS			= -ffreestanding -DMFTAH_ARCH=$(ARCH) -fshort-wchar -mno-red-zone -Wall $(INCS_DIR) $(OPTIM) \
+CFLAGS			= -ffreestanding -DMFTAH_ARCH=$(ARCH) -fshort-wchar -mno-red-zone -Wall $(INCS) $(OPTIM) \
 					-DMFTAH_RELEASE_DATE=$(shell printf "0x`date +%04Y``date +%02m``date +%02d`")
 
 USES_PIC		= -fPIC
