@@ -1,11 +1,11 @@
-#include "../include/mftah_uefi.h"
+#include "mftah_uefi.h"
 
-#include "../include/drivers/all.h"
+#include "drivers/all.h"
 
-#include "../include/core/input.h"
-#include "../include/core/util.h"
+#include "core/input.h"
+#include "core/util.h"
 
-#include "../include/loaders/loader.h"
+#include "loaders/loader.h"
 
 
 

@@ -1,19 +1,19 @@
-#include "../include/loaders/loader.h"
+#include "loaders/loader.h"
 
-#include "../include/loaders/disk.h"
-#include "../include/loaders/exe.h"
-#include "../include/loaders/elf.h"
-#include "../include/loaders/bin.h"
+#include "loaders/disk.h"
+#include "loaders/exe.h"
+#include "loaders/elf.h"
+#include "loaders/bin.h"
 
-#include "../include/drivers/displays.h"
-#include "../include/drivers/mftah_adapter.h"
-#include "../include/drivers/ramdisk.h"
-#include "../include/drivers/threading.h"
+#include "drivers/displays.h"
+#include "drivers/mftah_adapter.h"
+#include "drivers/ramdisk.h"
+#include "drivers/threading.h"
 
-#include "../include/core/input.h"
-#include "../include/core/util.h"
+#include "core/input.h"
+#include "core/util.h"
 
-#include "../include/mftah_uefi.h"
+#include "mftah_uefi.h"
 
 
 

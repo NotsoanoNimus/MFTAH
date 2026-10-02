@@ -1,12 +1,12 @@
-#include "../include/loaders/disk.h"
-#include "../include/loaders/elf.h"
-#include "../include/loaders/exe.h"
-#include "../include/loaders/bin.h"
+#include "loaders/disk.h"
+#include "loaders/elf.h"
+#include "loaders/exe.h"
+#include "loaders/bin.h"
 
-#include "../include/drivers/ramdisk.h"
-#include "../include/drivers/displays.h"
+#include "drivers/ramdisk.h"
+#include "drivers/displays.h"
 
-#include "../include/core/util.h"
+#include "core/util.h"
 
 
 

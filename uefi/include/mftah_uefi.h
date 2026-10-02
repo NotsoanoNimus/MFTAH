@@ -1,10 +1,11 @@
 #ifndef MFTAH_UEFI_H
 #define MFTAH_UEFI_H
 
-#include "../../gnu-efi/inc/efi.h"
-#include "../../gnu-efi/inc/efilib.h"
+#include "../gnu-efi/inc/efi.h"
+#include "../gnu-efi/inc/efilib.h"
 
-#include "../../MFTAH/src/include/mftah.h"
+// NOTE: This requires the project to be built from the MFTAH mono-repo.
+#include "../../protocol/include/mftah.h"
 
 
 /* Semantic versioning in case we want it. */

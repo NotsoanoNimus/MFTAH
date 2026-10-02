@@ -1,6 +1,6 @@
-#include "../include/loaders/exe.h"
+#include "loaders/exe.h"
 
-#include "../include/drivers/displays.h"
+#include "drivers/displays.h"
 
 
 

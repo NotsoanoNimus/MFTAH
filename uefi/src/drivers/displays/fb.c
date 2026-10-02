@@ -1,7 +1,7 @@
-#include "../../include/drivers/fb.h"
+#include "drivers/fb.h"
 
-#include "../../include/fonts/orchid.h"
-#include "../../include/core/util.h"
+#include "fonts/orchid.h"
+#include "core/util.h"
 
 
 

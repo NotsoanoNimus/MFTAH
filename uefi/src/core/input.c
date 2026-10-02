@@ -1,4 +1,4 @@
-#include "../include/core/input.h"
+#include "core/input.h"
 
 
 

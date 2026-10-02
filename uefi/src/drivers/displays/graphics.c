@@ -1,7 +1,7 @@
-#include "../../include/drivers/displays.h"
-#include "../../include/drivers/fb.h"
+#include "drivers/displays.h"
+#include "drivers/fb.h"
 
-#include "../../include/core/util.h"
+#include "core/util.h"
 
 
 

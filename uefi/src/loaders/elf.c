@@ -1,9 +1,9 @@
-#include "../include/loaders/elf.h"
-#include "../include/loaders/multiboot_exec.h"
+#include "loaders/elf.h"
+#include "loaders/multiboot_exec.h"
 
-#include "../include/drivers/displays.h"
+#include "drivers/displays.h"
 
-#include "../include/core/util.h"
+#include "core/util.h"
 
 
 

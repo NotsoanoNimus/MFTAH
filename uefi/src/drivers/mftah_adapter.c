@@ -1,4 +1,4 @@
-#include "../include/drivers/mftah_adapter.h"
+#include "drivers/mftah_adapter.h"
 
 
 STATIC mftah_protocol_t *MFTAH = NULL;

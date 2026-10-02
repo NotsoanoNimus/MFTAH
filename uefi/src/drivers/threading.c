@@ -1,8 +1,8 @@
 // TODO: Review this file. Possibly (1) break it out into its own
 //  library and/or (2) create a protocol interface
 
-#include "../include/mftah_uefi.h"
-#include "../include/drivers/threading.h"
+#include "mftah_uefi.h"
+#include "drivers/threading.h"
 
 
 /* Mutex to carefully synchronize certain thread operations. */

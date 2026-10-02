@@ -8,15 +8,17 @@ $(error '$(ARCH)' is not a supported architecture)
 endif
 
 
-CXX				= clang
+CC				= clang
 
+MFTAH_DIR		= ../protocol
 GNUEFI_DIR		= gnu-efi
-MFTAH_DIR		= MFTAH
 SRC_DIR			= src
+BUILD_DIR		= build
+OBJ_DIR			= $(BUILD_DIR)/obj
 
 EFIINC_DIR		= $(GNUEFI_DIR)/inc
-EFIINCS			= -I./ -I$(SRC_DIR)/include -I$(MFTAH_DIR)/src/include -I$(EFIINC_DIR) \
-					-I$(EFIINC_DIR)/$(ARCH) -I$(EFIINC_DIR)/protocol
+EFIINCS			= -Iinclude -I$(MFTAH_DIR)/include \
+					-I$(EFIINC_DIR) -I$(EFIINC_DIR)/$(ARCH) -I$(EFIINC_DIR)/protocol
 
 EFILIB			= $(GNUEFI_DIR)/$(ARCH)
 EFILIBS			= -L$(EFILIB)/lib -L$(EFILIB)/gnuefi
@@ -42,8 +44,8 @@ SRCS_MFTAHUEFI	= $(shell find $(SRC_DIR) -type f -name "*.c")
 PSF_SRC			= $(SRC_DIR)/core/font.c
 RAMDISK_AML_SRC = $(SRC_DIR)/Ramdisk.aml.c
 
-OBJS_GNUEFI		= $(patsubst %.c,%.o,$(SRCS_GNU_EFI) $(SRCS_ARCH) $(SRCS_RT))
-OBJS_MFTAHUEFI	= $(patsubst %.c,%.o,$(SRCS_MFTAHUEFI))
+OBJS_GNUEFI		= $(patsubst $(GNUEFI_DIR)/lib/%.c,$(OBJ_DIR)/lib/%.o,$(SRCS_GNU_EFI) $(SRCS_ARCH) $(SRCS_RT))
+OBJS_MFTAHUEFI	= $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS_MFTAHUEFI))
 
 PSF_OBJ			= $(SRC_DIR)/core/font.o
 RAMDISK_AML_OBJ = $(SRC_DIR)/Ramdisk.aml.o
@@ -53,25 +55,12 @@ OBJS			= $(OBJS_GNUEFI) $(OBJS_MFTAHUEFI)
 TARGET			= MFTAH.EFI
 
 
-.PHONY: default
-.PHONY: clean
-.PHONY: clean-objs
-.PHONY: font
-.PHONY: debug
-.PHONY: all
-.PHONY: ramdisk_ssdt
+.PHONY: default clean font debug all ramdisk_ssdt
 
 default: all
 
-clean: clean-objs
-	-rm $(TARGET)* &>/dev/null
-
-clean-objs:
-	-rm $(OBJS) &>/dev/null
-	-rm $(PSF_SRC) &>/dev/null
-	-rm $(PSF_OBJ) &>/dev/null
-	-rm $(RAMDISK_AML_SRC) &>/dev/null
-	-rm $(RAMDISK_AML_OBJ) &>/dev/null
+clean:
+	-rm -rf $(BUILD_DIR)
 
 # We can assume a 'clean' should be run on all .o files
 #   after the build completes. This is because compilation
@@ -79,18 +68,18 @@ clean-objs:
 #   helps not to mix up release and debug build artifacts.
 debug: CFLAGS += -DEFI_DEBUG=1
 ###debug: TARGET = $(TARGET).DEBUG
-debug: $(TARGET) clean-objs
+debug: $(TARGET)
 
 all: $(TARGET)
 
 %.o: %.c
-	$(CXX) $(CFLAGS) -c -o $@ $<
-
+	-mkdir -p $(shell dirname $@)
+	@echo -e "\t\tCC\t$<"
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(PSF_OBJ):
 	xxd -i font.psf >$(PSF_SRC)
-	$(CXX) $(CFLAGS) -c -o $(PSF_OBJ) $(PSF_SRC)
-
+	$(CC) $(CFLAGS) -c $(PSF_SRC) -o $(PSF_OBJ)
 
 $(RAMDISK_AML_OBJ): $(SRC_DIR)/Ramdisk.asl
 	iasl $(SRC_DIR)/Ramdisk.asl
@@ -99,18 +88,19 @@ $(RAMDISK_AML_OBJ): $(SRC_DIR)/Ramdisk.asl
 	echo -ne "};\nunsigned int NvdimmRootAmlLength = " >>$(RAMDISK_AML_SRC)
 	wc -c $(SRC_DIR)/Ramdisk.aml | cut -d' ' -f1 | tr -d '\n' >>$(RAMDISK_AML_SRC)
 	echo ";" >>$(RAMDISK_AML_SRC)
-	$(CXX) $(CFLAGS) -c -o $(RAMDISK_AML_OBJ) $(RAMDISK_AML_SRC)
+	$(CC) $(CFLAGS) -c -o $(RAMDISK_AML_OBJ) $(RAMDISK_AML_SRC)
 
+$(TARGET): $(BUILD_DIR) $(PSF_OBJ) $(RAMDISK_AML_OBJ) $(LIBGNUEFI) $(LIBEFI) $(LIBMFTAH) $(OBJS)
+	@echo -e "\t\tLD\t$@"
+	$(CC) -o $(TARGET) $(RAMDISK_AML_OBJ) $(PSF_OBJ) $(OBJS) $(LDFLAGS) $(LIBMFTAH)
 
-$(TARGET): $(PSF_OBJ) $(RAMDISK_AML_OBJ) $(LIBGNUEFI) $(LIBEFI) $(LIBMFTAH) $(OBJS)
-	$(CXX) $(LDFLAGS) -o $(TARGET) $(RAMDISK_AML_OBJ) $(PSF_OBJ) $(OBJS) $(LIBMFTAH)
-
+$(BUILD_DIR) $(OBJ_DIR):
+	-mkdir -p $(OBJ_DIR)/lib/
 
 # README dependency ensures the submodule is cloned 'properly'.
 $(LIBMFTAH): $(MFTAH_DIR)/README.md
 	$(MAKE) -C $(MFTAH_DIR) efi
 	$(MAKE) $(TARGET)
-
 
 $(LIBEFI): $(LIBGNUEFI)
 $(LIBGNUEFI): $(GNUEFI_DIR) $(GNUEFI_DIR)/README.md

@@ -1,7 +1,7 @@
-#include "../include/drivers/ramdisk.h"
+#include "drivers/ramdisk.h"
 
-#include "../include/drivers/acpi.h"
-#include "../include/drivers/nfit.h"
+#include "drivers/acpi.h"
+#include "drivers/nfit.h"
 
 
 

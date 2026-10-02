@@ -1,6 +1,6 @@
-#include "../../include/drivers/displays.h"
+#include "drivers/displays.h"
 
-#include "../../include/core/util.h"
+#include "core/util.h"
 
 
 

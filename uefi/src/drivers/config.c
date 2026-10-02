@@ -1,5 +1,5 @@
-#include "../include/drivers/config.h"
-#include "../include/core/util.h"
+#include "drivers/config.h"
+#include "core/util.h"
 
 
 

@@ -1,4 +1,4 @@
-#include "../include/drivers/acpi.h"
+#include "drivers/acpi.h"
 
 
 
