@@ -4,3 +4,6 @@
 [submodule "mbr"]
 	path = mbr
 	url = ssh://git@github.com/NotsoanoNimus/SYSLINUX
+[submodule "uefi/gnu-efi"]
+	path = uefi/gnu-efi
+	url = https://github.com/ncroxon/gnu-efi
