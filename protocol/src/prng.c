@@ -19,29 +19,14 @@
  * this program. If not, see https://www.gnu.org/licenses/.
  */
 
-#include "tinymt64.c"
+
+#include "../include/prng.h"
+
+/* Directly include the impl for this generator, but allow the translation unit to stay distinct. */
+#include "tinymt64._c"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
-
-
-
-static
-void
-prng_init(
-    mftah_immutable_protocol_t mftah
-);
-
-static
-uint64_t
-prng_next();
-
-static
-uint64_t
-prng_next_bounded(
-    const uint64_t low,
-    const uint64_t high
-);
 
 
 
@@ -125,7 +110,6 @@ Xoshiro128p__init(mftah_immutable_protocol_t mftah)
 }
 
 
-static
 void
 prng_init(mftah_immutable_protocol_t mftah)
 {
@@ -137,7 +121,6 @@ prng_init(mftah_immutable_protocol_t mftah)
 }
 
 
-static
 uint64_t
 prng_next()
 {
@@ -147,7 +130,6 @@ prng_next()
 }
 
 
-static
 uint64_t
 prng_next_bounded(const uint64_t low,
                   const uint64_t high)

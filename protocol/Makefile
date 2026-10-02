@@ -1,9 +1,6 @@
 # Makefile for the MFTAH library.
 #
-# Zack Puhl <zack@crows.dev>
-# 2024-10-17
-# 
-# Copyright (C) 2024 Zack Puhl
+# Copyright (C) 2024-2026 Zack Puhl <github@xmit.xyz>
 # 
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -18,22 +15,26 @@
 #
 #
 
-SUPPARCHS		= x86_64
+ifneq ($(V),1)
+.SILENT:
+endif
 
+SUPPARCHS		= x86_64 x86_64-pc-linux-gnu
 # Must be set to one of the members from SUPPARCHS.
-ARCH			:= x86_64
+ARCH			?= x86_64
 
-CXX				= clang
+CC				= clang
 
 ifeq ($(filter $(ARCH),$(SUPPARCHS)),)
 $(error '$(ARCH)' is not a supported architecture for this program.)
 endif
 
 SRC_DIR			= src
-INCLUDE_DIR		= src/include
+INCLUDE_DIR		= include
 BUILD_DIR		= build
+OBJ_DIR			= $(BUILD_DIR)/obj
 
-INCS			= -I./ -I./src -I$(INCLUDE_DIR)
+INCS			= -I$(INCLUDE_DIR)
 
 OPTIM			= -O3
 CFLAGS			= -ffreestanding -DMFTAH_ARCH=$(ARCH) -fshort-wchar -mno-red-zone -Wall $(INCS) $(OPTIM) \
@@ -41,34 +42,21 @@ CFLAGS			= -ffreestanding -DMFTAH_ARCH=$(ARCH) -fshort-wchar -mno-red-zone -Wall
 
 USES_PIC		= -fPIC
 
-SRCS			= $(shell find $(SRC_DIR) -maxdepth 1 -type f -name "*.c")
-OBJS			= $(patsubst %.c,%.o,$(SRCS))
+SRCS			= $(wildcard $(SRC_DIR)/*.c)
+OBJS			= $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 
 TARGET			= $(BUILD_DIR)/libmftah.so
 TARGET_STATIC	= $(BUILD_DIR)/libmftah.a
 
 
-.PHONY: default
-.PHONY: clean
-.PHONY: clean-objs
-.PHONY: debug
-.PHONY: all
-.PHONY: efi
-.PHONY: efi_debug
-.PHONY: static
-.PHONY: static_nostr
-.PHONY: static_debug
-.PHONY: install
+.PHONY: default clean debug all efi efi_debug static static_nostr static_debug install
 
 default: all
 
-clean:
-	-rm $(TARGET)* &>/dev/null
-	-rm $(TARGET_STATIC)* &>/dev/null
-	-rm $(OBJS) &>/dev/null	
+all: $(TARGET) $(TARGET_STATIC)
 
-clean-objs:
-	-rm $(OBJS) &>/dev/null
+clean:
+	-rm -rf $(BUILD_DIR)
 
 # We can assume a 'clean' should be run on all .o files
 #   after the build completes. This is because compilation
@@ -78,9 +66,9 @@ debug: CFLAGS += -DMFTAH_LIB_DEBUG=1
 debug: $(TARGET)
 
 efi: CFLAGS += -target $(ARCH)-unknown-windows -DMFTAH_WIDE_CHARS=1
-efi: CXX=clang
+efi: CC=clang
 efi: USES_PIC=""
-efi: $(TARGET_STATIC)
+efi: clean $(TARGET_STATIC)
 
 efi_debug: CFLAGS += -DMFTAH_LIB_DEBUG=1
 efi_debug: efi
@@ -94,26 +82,27 @@ static_nostr: static
 static: CFLAGS += -target $(ARCH)
 static: $(TARGET_STATIC)
 
-all: $(TARGET) $(TARGET_STATIC)
-
 all_debug: debug static_debug
 
-# Kind of silly, but we only need to compile a single object file.
-src/mftah.o:
-	-mkdir -p $(BUILD_DIR)
-	$(CXX) $(CFLAGS) $(USES_PIC) -c -o src/mftah.o src/mftah.c
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+	@echo -e "\t\tCC\t$<"
+	$(CC) $(CFALGS) $(USES_PIC) -c $< -o $@
 
-# DSO
-$(TARGET): src/mftah.o
-	$(CXX) -shared -o $(TARGET) src/mftah.o
+$(BUILD_DIR) $(OBJ_DIR):
+	-mkdir -p $(OBJ_DIR)
 
-# Archive
-$(TARGET_STATIC): src/mftah.o
-	ar rcs $(TARGET_STATIC) src/mftah.o
+$(TARGET): $(OBJS)
+	@echo -e "\t\tLD\t$(TARGET)"
+	$(CC) -shared -o $(TARGET) $(OBJS)
 
-# Install
+$(TARGET_STATIC): $(OBJS)
+	@echo -e "\t\tAR\t$(TARGET_STATIC)"
+	ar rcs $(TARGET_STATIC) $(OBJS)
+
+PREFIX				?= /usr/local
 install:
-	@cp $(INCLUDE_DIR)/*.h /usr/local/include/
-	-@cp -f $(TARGET) /usr/local/lib/
-	-@cp -f $(TARGET_STATIC) /usr/local/lib/
+	-mkdir -p $(PREFIX)/include/mftah/
+	cp $(INCLUDE_DIR)/*.h $(PREFIX)/include/mftah/
+	if [ -f "$(TARGET)" ]; then cp -f $(TARGET) $(PREFIX)/lib/; fi
+	if [ -f "$(TARGET_STATIC)" ]; then cp -f $(TARGET_STATIC) $(PREFIX)/lib/; fi
 	@echo -e "\n\n === libmftah installed ===\n"

@@ -32,76 +32,9 @@
 #pragma GCC diagnostic ignored "-Wunused-function"
 
 
-/*****************************************************************************/
-/* Includes:                                                                 */
-/*****************************************************************************/
-#include "include/mftah.h"
+#include "../include/aes.h"
 
 
-
-/*****************************************************************************/
-/* Static structs and other definitions:                                     */
-/*****************************************************************************/
-#define AES_KEYLEN 32
-#define AES_keyExpSize 240
-
-/* Block length in bytes. 128-bit blocks only. */
-#define AES_BLOCKLEN 16
-
-typedef
-struct AES_ctx {
-    uint8_t RoundKey[AES_keyExpSize];
-    uint8_t Iv[AES_BLOCKLEN];
-} aes_ctx_t;
-
-
-/**
- * Initialize a new context with an IV.
- */
-static
-void
-AES_init_ctx_iv(
-    const mftah_registration_details_t *meta,
-    struct AES_ctx              *ctx,
-    const uint8_t               *key,
-    const uint8_t               *iv
-);
-
-/*
- * The buffer size MUST be a mutiple of AES_BLOCKLEN.
- * NOTES:
- *   - Need to set IV in ctx via AES_init_ctx_iv()
- *   - No IV should ever be reused with the same key 
- */
-static
-void
-AES_CBC_decrypt_buffer(
-    const mftah_registration_details_t *meta,
-    struct AES_ctx              *ctx,
-    uint8_t                     *buf,
-    uint64_t                    length,
-    mftah_fp__progress_hook_t    progress,
-    void                        *progress_extra
-);
-
-/**
- * Encrypt a buffer. It must be a multiple of AES_BLOCKLEN.
- */
-static
-void
-AES_CBC_encrypt_buffer(
-    const mftah_registration_details_t *meta,
-    struct AES_ctx              *ctx,
-    uint8_t                     *buf,
-    uint64_t                    length,
-    mftah_fp__progress_hook_t    progress,
-    void                        *progress_extra
-);
-
-
-/*****************************************************************************/
-/* Defines:                                                                  */
-/*****************************************************************************/
 /* Number of columns comprising a state in AES. */
 #define Nb 4
 
@@ -120,11 +53,6 @@ AES_CBC_encrypt_buffer(
 #endif
 
 
-
-
-/*****************************************************************************/
-/* Private variables:                                                        */
-/*****************************************************************************/
 // state - array holding the intermediate results during decryption.
 typedef uint8_t state_t[4][4];
 
@@ -178,20 +106,6 @@ static const uint8_t Rcon[11] = {
     0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
 };
 
-/*
- * Jordan Goulder points out in PR #12 (https://github.com/kokke/tiny-AES-C/pull/12),
- * that you can remove most of the elements in the Rcon array, because they are unused.
- *
- * From Wikipedia's article on the Rijndael key schedule @ https://en.wikipedia.org/wiki/Rijndael_key_schedule#Rcon
- * 
- * "Only the first some of these constants are actually used – up to rcon[10] for AES-128 (as 11 round keys are needed), 
- *  up to rcon[8] for AES-192, up to rcon[7] for AES-256. rcon[0] is not used in AES algorithm."
- */
-
-
-/*****************************************************************************/
-/* Private functions:                                                        */
-/*****************************************************************************/
 #define getSBoxValue(num) (sbox[(num)])
 
 
@@ -265,18 +179,6 @@ KeyExpansion(uint8_t *RoundKey,
         RoundKey[j + 2] = RoundKey[k + 2] ^ tempa[2];
         RoundKey[j + 3] = RoundKey[k + 3] ^ tempa[3];
     }
-}
-
-
-static
-void
-AES_init_ctx_iv(const mftah_registration_details_t *meta,
-                struct AES_ctx *ctx,
-                const uint8_t *key,
-                const uint8_t *iv)
-{
-    KeyExpansion(ctx->RoundKey, key);
-    meta->memcpy(ctx->Iv, iv, AES_BLOCKLEN);
 }
 
 
@@ -496,9 +398,6 @@ Cipher(state_t *state,
 }
 
 
-/*****************************************************************************/
-/* Public functions:                                                         */
-/*****************************************************************************/
 static
 void
 XorWithIv(uint8_t* buf,
@@ -509,7 +408,17 @@ XorWithIv(uint8_t* buf,
 }
 
 
-static
+void
+AES_init_ctx_iv(const mftah_registration_details_t *meta,
+                struct AES_ctx *ctx,
+                const uint8_t *key,
+                const uint8_t *iv)
+{
+    KeyExpansion(ctx->RoundKey, key);
+    meta->memcpy(ctx->Iv, iv, AES_BLOCKLEN);
+}
+
+
 void
 AES_CBC_decrypt_buffer(const mftah_registration_details_t *meta,
                        struct AES_ctx *ctx,
@@ -541,7 +450,6 @@ AES_CBC_decrypt_buffer(const mftah_registration_details_t *meta,
 }
 
 
-static
 void
 AES_CBC_encrypt_buffer(const mftah_registration_details_t *meta,
                        struct AES_ctx *ctx,

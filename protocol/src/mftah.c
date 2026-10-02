@@ -1,11 +1,9 @@
 /**
- * @file mftah.c
- * @brief Implementations for the default 'libmftah' protocol methods.
+ * mftah.c
+ * Implementations for the default 'libmftah' protocol methods.
  *
- * @author Zack Puhl <zack@crows.dev>
- * @date 2024-10-17
- * 
- * @copyright Copyright (C) 2024 Zack Puhl
+ *
+ * Copyright (C) 2024-2026 Zack Puhl <github@xmit.xyz>
  * 
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,22 +17,15 @@
  * this program. If not, see https://www.gnu.org/licenses/.
  */
 
-#include "include/mftah.h"
+#include "../include/mftah.h"
+#include "../include/aes.h"
+#include "../include/sha256.h"
+#include "../include/prng.h"
 
 #define MAX(x,y) \
     (((x) >= (y)) ? (x) : (y))
 #define MIN(x,y) \
     (((x) <= (y)) ? (x) : (y))
-
-
-
-#if LIBMFTAH_VERSION_MAJOR == 1
-
-
-/* A bit cheap and unorthodox, but it doesn't really matter. We want a single module. */
-#include "aes.c"
-#include "sha256.c"
-#include "prng.c"
 
 
 #ifndef MFTAH_LIB_NOSTR
@@ -1224,7 +1215,3 @@ mftah_protocol_factory__create(mftah_protocol_t *retval)
 
     return MFTAH_SUCCESS;
 }
-
-
-
-#endif   /* LIBMFTAH_VERSION_MAJOR == 1 */

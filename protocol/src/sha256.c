@@ -21,13 +21,7 @@
 #pragma GCC diagnostic ignored "-Wunused-function"
 
 
-#include "include/mftah.h"
-
-
-/*
- * @brief Size of the SHA-256 sum. This times eight is 256 bits.
- */
-#define SIZE_OF_SHA_256_HASH 32
+#include "../include/sha256.h"
 
 /*
  * @brief Size of the chunks used for the calculations.
@@ -51,29 +45,6 @@ struct Sha_256 {
 	uint64_t total_len;
 	uint32_t h[8];
 };
-
-
-/*
- * @brief The simple SHA-256 calculation function.
- * @param hash Hash array, where the result is delivered.
- * @param input Pointer to the data the hash shall be calculated on.
- * @param len Length of the input data, in byte.
- *
- * @note If all of the data you are calculating the hash value on is available in a contiguous buffer in memory, this is
- * the function you should use.
- *
- * @note If either of the passed pointers is NULL, the results are unpredictable.
- *
- * @note See note about maximum data length for sha_256_write, as it applies for this function's len argument too.
- */
-static
-void
-calc_sha_256(
-    mftah_immutable_protocol_t mftah,
-    uint8_t hash[SIZE_OF_SHA_256_HASH],
-    const void *input,
-    size_t len
-);
 
 
 /*
@@ -140,22 +111,6 @@ uint8_t *
 sha_256_close(
     mftah_immutable_protocol_t mftah,
     struct Sha_256 *sha_256
-);
-
-
-/* Additional HMAC_SHA256 implementation. */
-static
-void
-hmac_sha256(
-    mftah_immutable_protocol_t mftah,
-    /* The key and its length. */
-    const void* key,
-    const size_t keylen,
-    /* The data and its length. */
-    const void* data,
-    const size_t datalen,
-    /* The resultant hash buffer. Always 32 bytes long. */
-    void* out
 );
 
 
@@ -432,7 +387,6 @@ sha_256_close(mftah_immutable_protocol_t mftah,
 }
 
 
-static
 void
 calc_sha_256(mftah_immutable_protocol_t mftah,
              uint8_t hash[SIZE_OF_SHA_256_HASH],
@@ -469,7 +423,6 @@ H(mftah_immutable_protocol_t mftah,
 
 
 /* Added here as an addition to SHA-256 methods. */
-static
 void
 hmac_sha256(mftah_immutable_protocol_t mftah,
             const void* key,

@@ -42,7 +42,7 @@
 #pragma GCC diagnostic ignored "-Wunused-function"
 
 
-#include "include/mftah.h"
+#include "../include/mftah.h"
 
 
 #define TINYMT64_MEXP 127

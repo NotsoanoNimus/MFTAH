@@ -1,11 +1,9 @@
 /**
- * @file mftah.h
- * @brief Implementations for the default 'libmftah' protocol methods.
+ * mftah.h
+ * Declarations for the default 'libmftah' protocol structures and functions.
  *
- * @author Zack Puhl <zack@crows.dev>
- * @date 2024-10-17
- * 
- * @copyright Copyright (C) 2024 Zack Puhl
+ *
+ * Copyright (C) 2024-2026 Zack Puhl <github@xmit.xyz>
  * 
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,8 +17,8 @@
  * this program. If not, see https://www.gnu.org/licenses/.
  */
 
-#ifndef LIB_MFTAH_H
-#define LIB_MFTAH_H
+#ifndef LIBMFTAH_H
+#define LIBMFTAH_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -640,4 +638,4 @@ mftah_status_t mftah_protocol_factory__create(
 
 
 
-#endif   /* LIB_MFTAH_H */
+#endif   /* LIBMFTAH_H */
