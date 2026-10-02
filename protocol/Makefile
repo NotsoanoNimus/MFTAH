@@ -85,18 +85,18 @@ static: $(TARGET_STATIC)
 all_debug: debug static_debug
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
-	@echo -e "\t\tCC\t$<"
+	@echo -e "\tCC\t\t$<"
 	$(CC) $(CFALGS) $(USES_PIC) -c $< -o $@
 
 $(BUILD_DIR) $(OBJ_DIR):
 	-mkdir -p $(OBJ_DIR)
 
 $(TARGET): $(OBJS)
-	@echo -e "\t\tLD\t$(TARGET)"
+	@echo -e "\tLD\t\t$(TARGET)"
 	$(CC) -shared -o $(TARGET) $(OBJS)
 
 $(TARGET_STATIC): $(OBJS)
-	@echo -e "\t\tAR\t$(TARGET_STATIC)"
+	@echo -e "\tAR\t\t$(TARGET_STATIC)"
 	ar rcs $(TARGET_STATIC) $(OBJS)
 
 PREFIX				?= /usr/local

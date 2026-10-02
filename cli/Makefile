@@ -56,13 +56,15 @@ debug: LIBMFTAH_TARGET = static_debug
 debug: $(TARGET)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+	@echo -e "\tCC\t\t$<"
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR) $(OBJ_DIR):
 	-@mkdir -p $(OBJ_DIR)
 
 $(TARGET): $(OBJS) $(LIBMFTAH_STATIC)
-	clang $(LIBS) -o $(TARGET) $(OBJS) $(LDFLAGS)
+	@echo -e "\tLD\t\t$<"
+	$(CC) $(LIBS) -o $(TARGET) $(OBJS) $(LDFLAGS)
 
 $(LIBMFTAH_STATIC):
 	$(MAKE) -C ../protocol $(LIBMFTAH_TARGET)
