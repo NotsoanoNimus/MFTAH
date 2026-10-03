@@ -65,9 +65,10 @@ clean:
 debug: CFLAGS += -DMFTAH_LIB_DEBUG=1
 debug: $(TARGET)
 
-efi: CFLAGS += -target $(ARCH)-unknown-windows -DMFTAH_WIDE_CHARS=1
 efi: CC=clang
-efi: USES_PIC=""
+efi: CFLAGS += -target $(ARCH)-unknown-windows
+# TODO: gnu-efi has changed; let's see upon testing whether we still use -DMFTAH_WIDE_CHARS=1
+efi: USES_PIC =
 efi: clean $(TARGET_STATIC)
 
 efi_debug: CFLAGS += -DMFTAH_LIB_DEBUG=1
@@ -86,7 +87,7 @@ all_debug: debug static_debug
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 	@echo -e "\tCC\t\t$<"
-	$(CC) $(CFALGS) $(USES_PIC) -c $< -o $@
+	$(CC) $(CFLAGS) $(USES_PIC) -c $< -o $@
 
 $(BUILD_DIR) $(OBJ_DIR):
 	-mkdir -p $(OBJ_DIR)

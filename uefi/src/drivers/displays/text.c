@@ -1013,12 +1013,12 @@ LoadingAnimationLoop(IN UINT8 AtColumn,
 
             for (UINTN j = 0; j < Width; ++j) {
                 if (NULL != RNG) {
-                    RNG->GetRNG(RNG, NULL, sizeof(UINTN), &CurrentAttribute);
+                    RNG->GetRNG(RNG, NULL, sizeof(UINTN), (UINT8 *)&CurrentAttribute);
                 } else ++CurrentAttribute;
                 STOP->SetAttribute(STOP, 0x7F & CurrentAttribute);
 
                 if (NULL != RNG) {
-                    RNG->GetRNG(RNG, NULL, sizeof(CHAR16), &RngChar[0]);
+                    RNG->GetRNG(RNG, NULL, sizeof(CHAR16), (UINT8 *)&RngChar[0]);
                 } else ++RngChar[0];
 
                 RngChar[0] = (L' ' + (RngChar[0] % (L'~' - L' ')));

@@ -80,12 +80,12 @@ InstallTable(IN EFI_ACPI_TABLE_PROTOCOL *This,
     }
 
     UINTN NewXsdtLength = xsdt->Length + sizeof(EFI_ACPI_DESCRIPTION_HEADER *);
-    BS->AllocatePool(EfiACPIMemoryNVS, NewXsdtLength, &xsdt);
+    BS->AllocatePool(EfiACPIMemoryNVS, NewXsdtLength, (VOID **)&xsdt);
     if (NULL == xsdt) return EFI_OUT_OF_RESOURCES;
     CopyMem(xsdt, (VOID *)(mRsdp->XsdtAddress), NewXsdtLength - sizeof(EFI_ACPI_DESCRIPTION_HEADER *));
 
     UINTN NewRsdtLength = rsdt->Length + sizeof(UINT32);
-    BS->AllocatePool(EfiACPIMemoryNVS, NewRsdtLength, &rsdt);
+    BS->AllocatePool(EfiACPIMemoryNVS, NewRsdtLength, (VOID **)&rsdt);
     if (NULL == rsdt) return EFI_OUT_OF_RESOURCES;
     CopyMem(rsdt, (VOID *)(mRsdp->RsdtAddress), NewRsdtLength - sizeof(UINT32));
 

@@ -231,18 +231,6 @@ AsciiAtoi(
 
 
 /**
- * Wrapper function for AsciiVSPrint.
- */
-VOID
-AsciiSPrint(
-    OUT CHAR8 *Into,            
-    IN UINTN Length,            
-    IN CONST CHAR8 *Format,            
-    ...
-);
-
-
-/**
  * Attempt to put all characters from the source buffer into a
  *  pre-allocated destination buffer.
  * 

@@ -1,5 +1,7 @@
 #include "drivers/mftah_adapter.h"
 
+#include "core/util.h"
+
 
 STATIC mftah_protocol_t *MFTAH = NULL;
 
@@ -118,7 +120,9 @@ MftahUefi__wrapper__Print(mftah_log_level_t Level,
         and dynamically pre-converted to wide characters. */
     va_list c;
     va_start(c, Format);
-    VPrint(Format, c);
+    CONST CHAR16 *str = (CONST CHAR16 *)AsciiStrToUnicode(Format);
+    VPrint(str, c);
+    FreePool(str);
     va_end(c);
 }
 

@@ -49,7 +49,7 @@ LoadImage(IN LOADER_CONTEXT *Context)
 
     /* Next, find the target image to chainload and load it to another segment of reserved memory. */
     Status = BS->LocateDevicePath(&gEfiSimpleFileSystemProtocolGuid,
-                                  (VOID **)&RamdiskDevicePath,
+                                  (EFI_DEVICE_PATH **)&RamdiskDevicePath,
                                   &RamdiskDeviceHandle);
     if (EFI_ERROR(Status)) {
         /* Try an alternative, iterative method. */
@@ -88,7 +88,7 @@ LoadImage(IN LOADER_CONTEXT *Context)
         /* Try to convert the handle to an SFS instance. */
         RamdiskDevicePath = DevicePathFromHandle(RamdiskDeviceHandle);
         Status = BS->LocateDevicePath(&gEfiSimpleFileSystemProtocolGuid,
-                                      (VOID **)&RamdiskDevicePath,
+                                      (EFI_DEVICE_PATH **)&RamdiskDevicePath,
                                       &RamdiskDeviceHandle);
 
         if (EFI_ERROR(Status)) {

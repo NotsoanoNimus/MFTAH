@@ -463,19 +463,6 @@ AsciiAtoi(IN CONST CHAR8 *String)
 }
 
 
-VOID
-AsciiSPrint(OUT CHAR8 *Into,
-            IN UINTN Length,
-            IN CONST CHAR8 *Format,
-            ...)
-{
-    va_list args;
-    va_start(args, Format);
-    AsciiVSPrint(Into, Length, Format, args);
-    va_end(args);
-}
-
-
 CHAR16 *
 AsciiStrToUnicode(IN CHAR8 *Src)
 {

@@ -31,14 +31,14 @@ LoadImage(IN LOADER_CONTEXT *Context)
         Never-nesting goes HARD when you know what you're doin. */
     if (NULL == Context->Chain->CmdLine) goto LoadImage__NoCmdLine;
 
-    Status = BS->HandleProtocol(LoadedImageHandle, &gEfiLoadedImageProtocolGuid, &LIP);
+    Status = BS->HandleProtocol(LoadedImageHandle, &gEfiLoadedImageProtocolGuid, (VOID **)&LIP);
     if (!EFI_ERROR(Status) && NULL != LIP) goto LoadImage__ErrorNoCmdLine;
 
     /* First, reserve a copy of the cmdline data as a Reserved region. */
     CHAR8 *CmdCopy = NULL;
     UINTN CmdLen = AsciiStrLen(Context->Chain->CmdLine);
 
-    BS->AllocatePool(EfiReservedMemoryType, CmdLen + 1, &CmdCopy);
+    BS->AllocatePool(EfiReservedMemoryType, CmdLen + 1, (VOID **)&CmdCopy);
     if (NULL == CmdCopy) goto LoadImage__ErrorNoCmdLine;
     CopyMem(CmdCopy, Context->Chain->CmdLine, CmdLen);
 

@@ -98,7 +98,7 @@
     Print((x));
 #define VARPRINT8(x) \
     { \
-        CHAR8 *x##_as16 = AsciiStrToUnicode(x); \
+        CHAR16 *x##_as16 = AsciiStrToUnicode(x); \
         if (NULL != x##_as16) { \
             Print(x##_as16); \
             FreePool(x##_as16); \

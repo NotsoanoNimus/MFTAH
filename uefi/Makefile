@@ -30,6 +30,7 @@ endif
 
 
 CC				= clang
+FRESH_MAKE		= env -i PATH="$(PATH)" make -C
 
 MFTAH_DIR		= ../protocol
 GNUEFI_DIR		= gnu-efi
@@ -55,14 +56,14 @@ CFLAGS			= -target $(ARCH)-unknown-windows \
 					-ffreestanding \
 					-DMFTAH_ARCH=$(ARCH) \
 					-masm=intel -mno-stack-arg-probe \
-					-Wall \
+					-Wall -Wpedantic -Wextra \
 					$(EFIINCS) $(OPTIM) \
 					-DMFTAH_RELEASE_DATE=$(shell printf "0x`date +%Y``date +%m`%d" `date +%02d`)
 LDFLAGS			= -target $(ARCH)-unknown-windows \
 					-nostdlib \
+					-fuse-ld=lld-link \
 					-Wl,-entry:efi_main \
 					-Wl,-subsystem:efi_application \
-					-fuse-ld=lld-link \
 					-mno-stack-arg-probe \
 					$(EFILIBS) \
 					$(MFTAHLIBS)
@@ -75,35 +76,36 @@ SRCS_MFTAHUEFI	= $(shell find $(SRC_DIR) -type f -name "*.c")
 PSF_SRC			= $(SRC_DIR)/core/font.c
 RAMDISK_AML_SRC = $(SRC_DIR)/Ramdisk.aml.c
 
-OBJS_GNUEFI		= $(patsubst $(GNUEFI_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS_GNU_EFI) $(SRCS_ARCH) $(SRCS_RT))
+OBJS_GNUEFI		= $(patsubst $(GNUEFI_DIR)/lib/%.c,$(OBJ_DIR)/lib/%.o,$(SRCS_GNU_EFI) $(SRCS_ARCH) $(SRCS_RT))
 OBJS_MFTAHUEFI	= $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS_MFTAHUEFI))
 
 PSF_OBJ			= $(OBJ_DIR)/core/font.o
 RAMDISK_AML_OBJ = $(OBJ_DIR)/Ramdisk.aml.o
 
-OBJS			= $(OBJS_GNUEFI) $(OBJS_MFTAHUEFI)
+OBJS_PRE		= $(OBJS_GNUEFI) $(OBJS_MFTAHUEFI)
+OBJS			= $(filter-out $(OBJ_DIR)/lib/ms_va_print.o,$(OBJS_PRE))
 
-TARGET			= $(BUILD_DIR)/MFTAH.EFI
+TARGET			?= $(BUILD_DIR)/MFTAH.EFI
+DEBUG_TARGET	= $(TARGET).DEBUG
 
 
 .PHONY: default clean font debug all ramdisk_ssdt
 
 default: all
 
+all: $(TARGET)
+
 clean:
 	-rm -rf $(BUILD_DIR)
 	$(MAKE) -C ../protocol clean
-	env -i PATH="$(PATH)" make -C $(GNUEFI_DIR) clean
+	$(FRESH_MAKE) $(GNUEFI_DIR) clean
 
 # We can assume a 'clean' should be run on all .o files
 #   after the build completes. This is because compilation
 #   of the EFI file is rather expedient anyway, and it
 #   helps not to mix up release and debug build artifacts.
 debug: CFLAGS += -DEFI_DEBUG=1
-###debug: TARGET = $(TARGET).DEBUG
-debug: $(TARGET)
-
-all: $(TARGET)
+debug: $(DEBUG_TARGET)
 
 $(PSF_OBJ):
 	-mkdir -p $(shell dirname $@)
@@ -124,9 +126,11 @@ $(RAMDISK_AML_OBJ): $(SRC_DIR)/Ramdisk.asl
 	@echo -e "\tCC\t\t$(RAMDISK_AML_SRC)"
 	$(CC) $(CFLAGS) -c $(RAMDISK_AML_SRC) -o $(RAMDISK_AML_OBJ)
 
-$(TARGET): $(BUILD_DIR) $(PSF_OBJ) $(RAMDISK_AML_OBJ) $(LIBGNUEFI) $(LIBEFI) $(LIBMFTAH) $(OBJS)
+$(TARGET) $(DEBUG_TARGET): $(BUILD_DIR) $(PSF_OBJ) $(RAMDISK_AML_OBJ) $(LIBGNUEFI) $(LIBEFI) $(LIBMFTAH) $(OBJS)
 	@echo -e "\tLD\t\t$@"
-	$(CC) $(LDFLAGS) -o $(TARGET) $(RAMDISK_AML_OBJ) $(PSF_OBJ) $(OBJS) $(LIBMFTAH)
+	rm -f $(OBJ_DIR)/lib/ms_va_print.o
+	$(CC) $(LDFLAGS) -o $@ $(RAMDISK_AML_OBJ) $(PSF_OBJ) $(OBJS) $(LIBGNUEFI) $(LIBEFI) $(LIBMFTAH)
+	@echo -e "\n\n\tDone. MFTAH EFI loader ready at '$@'.\n"
 
 $(BUILD_DIR) $(OBJ_DIR):
 	-mkdir -p $(OBJ_DIR)/lib/
@@ -136,7 +140,7 @@ $(LIBMFTAH):
 
 $(LIBEFI): $(LIBGNUEFI)
 $(LIBGNUEFI): $(GNUEFI_DIR) $(GNUEFI_DIR)/README.md
-	env -i PATH="$(PATH)" make -C $(GNUEFI_DIR) all
+	$(FRESH_MAKE) $(GNUEFI_DIR) all
 
 %.o: %.c
 	-mkdir -p $(dir $@)
