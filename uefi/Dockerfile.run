@@ -1,0 +1,25 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    qemu-system-x86 \
+    ovmf \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /work
+COPY ./build/MFTAH.* /work
+COPY mftah.cfg* /work
+
+RUN ln -s /usr/share/ovmf/OVMF.fd /usr/local/share/qemu/bios.bin
+
+CMD [
+    "qemu-system-x86_64", 
+    "-bios", "/usr/share/ovmf/OVMF.fd",
+    "-drive", "file.driver=vvfat,file.dir=hda1,file.rw=on",
+    "-m", "32M",
+    "-net", "none",
+    "-serial", "stdio",
+    "-debugcon", "file:debug.log",
+    "-global", "isa-debugcon.iobase=0x402"
+]

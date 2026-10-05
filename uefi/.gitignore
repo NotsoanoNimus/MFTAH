@@ -1,3 +1,7 @@
 build/
+hda1/
 src/core/font.c
 src/Ramdisk.aml.c
+mftah.cfg*
+!mftah.cfg.example
+!mftah.cfg.minimal.example

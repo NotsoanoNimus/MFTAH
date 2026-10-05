@@ -89,11 +89,14 @@ TARGET			?= $(BUILD_DIR)/MFTAH.EFI
 DEBUG_TARGET	= $(TARGET).DEBUG
 
 
-.PHONY: default clean font debug all ramdisk_ssdt
+.PHONY: default all run clean debug
 
 default: all
 
 all: $(TARGET)
+
+run:
+	./run-vm.sh
 
 clean:
 	-rm -rf $(BUILD_DIR)
