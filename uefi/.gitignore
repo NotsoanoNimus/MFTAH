@@ -1,5 +1,7 @@
 build/
 hda1/
+logs/
+!logs/.gitkeep
 src/core/font.c
 src/Ramdisk.aml.c
 mftah.cfg*

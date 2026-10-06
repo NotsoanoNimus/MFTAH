@@ -8,18 +8,22 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /work
-COPY ./build/MFTAH.* /work
-COPY mftah.cfg* /work
+COPY ./build/MFTAH.* /work/
+COPY mftah.cfg* /work/
 
-RUN ln -s /usr/share/ovmf/OVMF.fd /usr/local/share/qemu/bios.bin
+RUN cp -f /usr/share/OVMF/OVMF_VARS.fd /work/OVMF_VARS.fd
 
-CMD [
-    "qemu-system-x86_64", 
-    "-bios", "/usr/share/ovmf/OVMF.fd",
-    "-drive", "file.driver=vvfat,file.dir=hda1,file.rw=on",
-    "-m", "32M",
-    "-net", "none",
-    "-serial", "stdio",
-    "-debugcon", "file:debug.log",
-    "-global", "isa-debugcon.iobase=0x402"
+CMD [ \
+    "qemu-system-x86_64", \
+    "-drive", "file=fat:rw:/work/hda1,format=raw,if=ide", \
+    "-drive", "if=pflash,format=raw,unit=0,file=/usr/share/OVMF/OVMF_CODE.fd,readonly=on", \
+    "-drive", "if=pflash,format=raw,unit=1,file=/work/OVMF_VARS.fd", \
+    "-m", "256M", \
+    "-net", "none", \
+    "-smp", "cpus=4,sockets=1,cores=4,threads=1", \
+    "-cpu", "max", \
+    "-serial", "stdio", \
+    "-display", "none", \
+    "-debugcon", "file:/work/logs/debug.log", \
+    "-global", "isa-debugcon.iobase=0x402" \
 ]

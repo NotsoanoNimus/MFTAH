@@ -85,7 +85,7 @@ RAMDISK_AML_OBJ = $(OBJ_DIR)/Ramdisk.aml.o
 OBJS_PRE		= $(OBJS_GNUEFI) $(OBJS_MFTAHUEFI)
 OBJS			= $(filter-out $(OBJ_DIR)/lib/ms_va_print.o,$(OBJS_PRE))
 
-TARGET			?= $(BUILD_DIR)/MFTAH.EFI
+TARGET			= $(BUILD_DIR)/MFTAH.EFI
 DEBUG_TARGET	= $(TARGET).DEBUG
 
 
@@ -95,7 +95,7 @@ default: all
 
 all: $(TARGET)
 
-run:
+run: $(TARGET)
 	./run-vm.sh
 
 clean:
