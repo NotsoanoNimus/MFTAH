@@ -19,7 +19,6 @@
  * this program. If not, see https://www.gnu.org/licenses/.
  */
 
-
 #include "../include/prng.h"
 
 /* Directly include the impl for this generator, but allow the translation unit to stay distinct. */
@@ -39,104 +38,104 @@ static int s_mutex = 0;
 static inline
 uint64_t
 rotl(const uint64_t x,
-     int k)
+	 int k)
 {
-    return ((x << k) | (x >> (64 - k)));
+	return ((x << k) | (x >> (64 - k)));
 }
 
 
 static inline
 uint64_t
 Xoshiro128p__next_bounded(uint64_t low,
-                          uint64_t high)
+						  uint64_t high)
 {
-    s_mutex = 1;
+	s_mutex = 1;
 
-    const uint64_t range = 1 + high - low;
+	const uint64_t range = 1 + high - low;
 
-    const uint64_t s0 = s[0];
-    uint64_t s1 = s[1];
-    const uint64_t result = s0 + s1;
+	const uint64_t s0 = s[0];
+	uint64_t s1 = s[1];
+	const uint64_t result = s0 + s1;
 
-    s1 ^= s0;
-    s[0] = rotl(s0, 24) ^ s1 ^ (s1 << 16);
-    s[1] = rotl(s1, 37);
+	s1 ^= s0;
+	s[0] = rotl(s0, 24) ^ s1 ^ (s1 << 16);
+	s[1] = rotl(s1, 37);
 
-    s_mutex = 0;
+	s_mutex = 0;
 
-    return (
-        (high > low)
-        * (
-            (
-                result
-                % (
-                    (
-                        ((0 == range) * 1)
-                        + range
-                    )
-                )
-            )
-            + low
-        )
-    );
+	return (
+		(high > low)
+		* (
+			(
+				result
+				% (
+					(
+						((0 == range) * 1)
+						+ range
+					)
+				)
+			)
+			+ low
+		)
+	);
 }
 
 static
 void
 Xoshiro128p__init(mftah_immutable_protocol_t mftah)
 {
-    uint64_t seed_value;
-    unsigned int lo, hi;
-    tinymt64_t* p_prng_init;
+	uint64_t seed_value;
+	unsigned int lo, hi;
+	tinymt64_t* p_prng_init;
 
-    s_mutex = 1;
+	s_mutex = 1;
 
-    // Get the amount of cycles since the processor was powered on.
-    //   This should act as a sufficient non-time-based PRNG seed.
-    __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
-    seed_value = (((uint64_t)hi << 32) | lo);
+	// Get the amount of cycles since the processor was powered on.
+	//   This should act as a sufficient non-time-based PRNG seed.
+	__asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
+	seed_value = (((uint64_t)hi << 32) | lo);
 
-    p_prng_init = (tinymt64_t*)mftah->hooks.calloc(1, sizeof(tinymt64_t));
-    tinymt64_init(p_prng_init, seed_value);
+	p_prng_init = (tinymt64_t*)mftah->hooks.calloc(1, sizeof(tinymt64_t));
+	tinymt64_init(p_prng_init, seed_value);
 
-    // Seed Xoshiro128+.
-    s[0] = tinymt64_generate_uint64(p_prng_init);
-    s[1] = tinymt64_generate_uint64(p_prng_init);
+	// Seed Xoshiro128+.
+	s[0] = tinymt64_generate_uint64(p_prng_init);
+	s[1] = tinymt64_generate_uint64(p_prng_init);
 
-    mftah->hooks.free(p_prng_init);
+	mftah->hooks.free(p_prng_init);
 
-    s_seeded = 1;
-    s_mutex = 0;
+	s_seeded = 1;
+	s_mutex = 0;
 }
 
 
 void
 prng_init(mftah_immutable_protocol_t mftah)
 {
-    while (0 != s_mutex);
+	while (0 != s_mutex);
 
-    if (0 == s_seeded) {
-        Xoshiro128p__init(mftah);
-    }
+	if (0 == s_seeded) {
+		Xoshiro128p__init(mftah);
+	}
 }
 
 
 uint64_t
 prng_next()
 {
-    while (0 != s_mutex);
+	while (0 != s_mutex);
 
-    return Xoshiro128p__next_bounded(0, UINT64_MAX - 1);
+	return Xoshiro128p__next_bounded(0, UINT64_MAX - 1);
 }
 
 
 uint64_t
 prng_next_bounded(const uint64_t low,
-                  const uint64_t high)
+				  const uint64_t high)
 {
-    while (0 != s_mutex);
+	while (0 != s_mutex);
 
-    return Xoshiro128p__next_bounded(low, high);
+	return Xoshiro128p__next_bounded(low, high);
 }
 
 

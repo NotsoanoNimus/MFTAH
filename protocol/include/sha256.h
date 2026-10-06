@@ -25,25 +25,22 @@
  */
 void
 calc_sha_256(
-    mftah_immutable_protocol_t mftah,
-    uint8_t hash[SIZE_OF_SHA_256_HASH],
-    const void *input,
-    size_t len
+	mftah_immutable_protocol_t	mftah,
+	uint8_t						hash[SIZE_OF_SHA_256_HASH],
+	const void					*input,
+	size_t						len
 );
 
 
 /* Additional HMAC_SHA256 implementation. */
 void
 hmac_sha256(
-    mftah_immutable_protocol_t mftah,
-    /* The key and its length. */
-    const void* key,
-    const size_t keylen,
-    /* The data and its length. */
-    const void* data,
-    const size_t datalen,
-    /* The resultant hash buffer. Always 32 bytes long. */
-    void* out
+	mftah_immutable_protocol_t	mftah,
+	const void					*key,
+	const size_t				keylen,
+	const void					*data,
+	const size_t				datalen,
+	void						*out
 );
 
 

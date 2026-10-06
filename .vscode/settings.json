@@ -3,5 +3,6 @@
     "editor.fontFamily": "'Droid Sans Mono', monospace",
     "editor.tabSize": 4,
     "editor.insertSpaces": false,
-    "editor.detectIndentation": false
+    "editor.detectIndentation": false,
+	"editor.rulers": [100]
 }
