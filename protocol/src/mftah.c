@@ -89,7 +89,7 @@ mftah_crypt_default(IN mftah_immutable_protocol_t self,
 	aes_context = (aes_ctx_t *)self->hooks.calloc(1, sizeof(aes_ctx_t));
 	AES_init_ctx_iv(
 		aes_context,
-		(aes_memcpy_fn_t)&(self->hooks.memcpy),
+		self->hooks.memcpy,
 		(uint8_t *)sha256_key,
 		(uint8_t *)iv
 	);

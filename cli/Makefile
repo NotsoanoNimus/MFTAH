@@ -28,30 +28,36 @@ LIBMFTAH_STATIC		= $(LIBMFTAH_BUILD_DIR)/libmftah.a
 LIBMFTAH_INC_DIR	= ../protocol/include
 
 CC					= clang
-OPTIM				?= -O3
-CFLAGS				= $(OPTIM) \
-						-Wall -Wpedantic -Wextra \
+CFLAGS				= -Wall -Wpedantic -Wextra \
 						-I$(LIBMFTAH_INC_DIR) \
 						-DMFTAH_ARCH=$(ARCH) \
 						-DMFTAH_RELEASE_DATE=$(shell printf "0x`date +%04Y``date +%02m``date +%02d`")
+DEBUG_FLAGS			= -O0 -g3 \
+						-fsanitize=address \
+						-DMFTAHCRYPT_DEBUG=1
+RELEASE_FLAGS		= -s -g0 -O3 -flto=auto
 LDFLAGS				= -lm -lpthread -L$(LIBMFTAH_BUILD_DIR) -lmftah
 
 SRCS				= $(shell find $(SRC_DIR) -maxdepth 1 -type f -name "*.c")
 OBJS				= $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 
 TARGET				= $(BUILD_DIR)/mftahcrypt
+LIBMFTAH_TARGET		= static
 
 
-.PHONY: default clean debug install
+.PHONY: default clean release debug install
 
-default: $(TARGET)
+default: release
 
 clean:
 	-rm -rf $(BUILD_DIR)
 	$(MAKE) -C ../protocol clean
 
-LIBMFTAH_TARGET		:= static
-debug: CFLAGS += -DMFTAHCRYPT_DEBUG=1
+release: CFLAGS += $(RELEASE_FLAGS)
+release: $(TARGET)
+
+debug: CFLAGS += $(DEBUG_FLAGS)
+debug: LDFLAGS += -fsanitize=address
 debug: LIBMFTAH_TARGET = static_debug
 debug: $(TARGET)
 
