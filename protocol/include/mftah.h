@@ -24,6 +24,22 @@
 #include <stddef.h>
 
 
+/* Semantic versioning in case we want it. */
+#define LIBMFTAH_VERSION_MAJOR 1
+#define LIBMFTAH_VERSION_MINOR 1
+#define LIBMFTAH_VERSION_PATCH 3
+
+#define _STRINGIFY(x) #x
+#define STRINGIFY(x) _STRINGIFY(x)
+#define LIBMFTAH_VERSION \
+    _w(STRINGIFY(LIBMFTAH_VERSION_MAJOR) "." STRINGIFY(LIBMFTAH_VERSION_MINOR) "." STRINGIFY(LIBMFTAH_VERSION_PATCH))
+
+
+/* Default MFTAH compilation date. This is usually set during compilation by `make`. */
+#ifndef MFTAH_RELEASE_DATE
+#   define MFTAH_RELEASE_DATE 0x20261005
+#endif
+
 
 /* Syntactic definitions, really just to look similar to gnu-efi declarations. */
 #define IN
@@ -34,41 +50,38 @@
 #define EXTERN extern
 #define VOLATILE volatile
 
+
 /* Define an immutable pointer and pointed value. */
 typedef
 CONST void *CONST
 immutable_ref_t;
 
 
-/* Default MFTAH compilation date. This is usually set during compilation by `make`. */
-#ifndef MFTAH_RELEASE_DATE
-#   define MFTAH_RELEASE_DATE 0x20241017
-#endif
-
-
 /* Used to track the status/condition of a payload or operation. */
-#define MFTAH_SUCCESS                   0
-#define MFTAH_FAIL_GENERIC              1
-#define MFTAH_INVALID_PARAMETER         2
-#define MFTAH_INVALID_ALIGNMENT         3
-#define MFTAH_OUT_OF_RESOURCES          4
-#define MFTAH_INVALID_SIGNATURE         5
-#define MFTAH_BAD_PAYLOAD_STATE         10
-#define MFTAH_PAYLOAD_NOT_DECRYPTED     11
-#define MFTAH_INVALID_PASSWORD          12
-#define MFTAH_INVALID_THREAD_COUNT      13
-#define MFTAH_INVALID_ENCRYPTION_TYPE   14
-#define MFTAH_INVALID_HMAC_TYPE         15
-#define MFTAH_BAD_W_HMAC                20
-#define MFTAH_BAD_O_HMAC                21
-#define MFTAH_BAD_PAYLOAD_LEN           22
-#define MFTAH_BAD_IV                    23
-#define MFTAH_BAD_IV_SEEDS              24
-#define MFTAH_BAD_PW_HASH               25
-#define MFTAH_THREAD_BUSY               30
+typedef enum : uint8_t
+{
+    MFTAH_SUCCESS                   = 0,
+    MFTAH_FAIL_GENERIC              = 1,
+    MFTAH_INVALID_PARAMETER         = 2,
+    MFTAH_INVALID_ALIGNMENT         = 3,
+    MFTAH_OUT_OF_RESOURCES          = 4,
+    MFTAH_INVALID_SIGNATURE         = 5,
+    MFTAH_BAD_PAYLOAD_STATE         = 10,
+    MFTAH_PAYLOAD_NOT_DECRYPTED     = 11,
+    MFTAH_INVALID_PASSWORD          = 12,
+    MFTAH_INVALID_THREAD_COUNT      = 13,
+    MFTAH_INVALID_ENCRYPTION_TYPE   = 14,
+    MFTAH_INVALID_HMAC_TYPE         = 15,
+    MFTAH_BAD_W_HMAC                = 20,
+    MFTAH_BAD_O_HMAC                = 21,
+    MFTAH_BAD_PAYLOAD_LEN           = 22,
+    MFTAH_BAD_IV                    = 23,
+    MFTAH_BAD_IV_SEEDS              = 24,
+    MFTAH_BAD_PW_HASH               = 25,
+    MFTAH_THREAD_BUSY               = 30
+} mftah_status_t;
 
-#define MFTAH_NOT_REGISTERED            MFTAH_SUCCESS
-
+#define MFTAH_NOT_REGISTERED        MFTAH_SUCCESS
 #define MFTAH_ERROR(x) \
     (MFTAH_SUCCESS != (x))
 
@@ -81,23 +94,6 @@ immutable_ref_t;
 #endif
 
 
-/* Semantic versioning in case we want it. */
-#define LIBMFTAH_VERSION_MAJOR 1
-#define LIBMFTAH_VERSION_MINOR 1
-#define LIBMFTAH_VERSION_PATCH 3
-
-#define _STRINGIFY(x) #x
-#define STRINGIFY(x) _STRINGIFY(x)
-#define LIBMFTAH_VERSION \
-    _w(STRINGIFY(LIBMFTAH_VERSION_MAJOR) "." STRINGIFY(LIBMFTAH_VERSION_MINOR) "." STRINGIFY(LIBMFTAH_VERSION_PATCH))
-
-
-/* Simple typedef to accommodate MFTAH statuses. */
-typedef
-uint8_t
-mftah_status_t;
-
-
 /* Misc other adjacent definitions that downstream projects might need. */
 #define SIZE_OF_SHA_256_HASH    32
 #define AES_BLOCKLEN            16
@@ -105,8 +101,8 @@ mftah_status_t;
 
 
 /* A set of log levels to be passed to registered printing functions. */
-typedef
-enum {
+typedef enum
+{
     MFTAH_LEVEL_ERROR       = 1,
     MFTAH_LEVEL_WARNING,
     MFTAH_LEVEL_NOTICE,
@@ -114,28 +110,29 @@ enum {
     MFTAH_LEVEL_DEBUG
 } mftah_log_level_t;
 
+
 /* Registration information associated with each MFTAH protocol instance. */
-typedef
-struct {
-    void  (*printf)(mftah_log_level_t level, const char *restrict fmt, ...);
-    void *(*malloc)(size_t size);
-    void *(*calloc)(size_t count, size_t size);
-    void *(*realloc)(void *at, size_t to_size);
-    void *(*memcpy)(void *restrict dst, const void *restrict src, size_t length);
-    void *(*memset)(void *at, int value, size_t length);
-    void *(*memmove)(void *dst, const void *src, size_t length);
-    int   (*memcmp)(const void *s1, const void *s2, size_t length);
-    void  (*free)(void *ptr);
+typedef struct
+{
+    void  (*printf)  (mftah_log_level_t level, const char *restrict fmt, ...);
+    void *(*malloc)  (size_t size);
+    void *(*calloc)  (size_t count, size_t size);
+    void *(*realloc) (void *at, size_t to_size);
+    void *(*memcpy)  (void *restrict dst, const void *restrict src, size_t length);
+    void *(*memset)  (void *at, int value, size_t length);
+    void *(*memmove) (void *dst, const void *src, size_t length);
+    int   (*memcmp)  (const void *s1, const void *s2, size_t length);
+    void  (*free)    (void *ptr);
 } mftah_registration_details_t;
 
 
 /* A set of payload states. */
-typedef
-enum {
+typedef enum
+{
     INVALID     = 0,
     ENCRYPTED   = 1,
-    DECRYPTED,
-    UNKNOWN
+    DECRYPTED   = 2,
+    UNKNOWN     = 3
 } mftah_payload_state_t;
 
 
