@@ -88,8 +88,8 @@ mftah_crypt_default(IN mftah_immutable_protocol_t self,
 
 	aes_context = (aes_ctx_t *)self->hooks.calloc(1, sizeof(aes_ctx_t));
 	AES_init_ctx_iv(
-		&(self->hooks),
 		aes_context,
+		(aes_memcpy_fn_t)&(self->hooks.memcpy),
 		(uint8_t *)sha256_key,
 		(uint8_t *)iv
 	);
@@ -97,7 +97,6 @@ mftah_crypt_default(IN mftah_immutable_protocol_t self,
 	switch (work_order->type) {
 		case MFTAH_WORK_TYPE_ENCRYPT:
 			AES_CBC_encrypt_buffer(
-				&(self->hooks),
 				aes_context,
 				work_order->location,
 				work_order->length,
@@ -107,7 +106,6 @@ mftah_crypt_default(IN mftah_immutable_protocol_t self,
 			break;
 		case MFTAH_WORK_TYPE_DECRYPT:
 			AES_CBC_decrypt_buffer(
-				&(self->hooks),
 				aes_context,
 				work_order->location,
 				work_order->length,

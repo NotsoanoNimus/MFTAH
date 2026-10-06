@@ -1,10 +1,30 @@
 #ifndef LIBMFTAH_AES_H
 #define LIBMFTAH_AES_H
 
-#include "mftah.h"
+#include <stdint.h>
+#include <stddef.h>
 
 
-#define AES_keyExpSize 240
+#define AES_keyExpSize	240
+#define AES_BLOCKLEN	16
+#define AES_KEYLEN		32
+
+
+typedef
+void *
+(*aes_memcpy_fn_t)(
+	void *restrict,
+	const void *restrict,
+	size_t
+);
+
+typedef
+void
+(*aes_progress_fn_t)(
+	const size_t *,
+	const size_t *,
+	void *
+);
 
 
 typedef
@@ -12,6 +32,7 @@ struct AES_ctx
 {
 	uint8_t RoundKey[AES_keyExpSize];
 	uint8_t Iv[AES_BLOCKLEN];
+	aes_memcpy_fn_t MemcpyHook;
 } aes_ctx_t;
 
 
@@ -20,10 +41,10 @@ struct AES_ctx
  */
 void
 AES_init_ctx_iv(
-	const mftah_registration_details_t	*meta,
-	struct AES_ctx						*ctx,
-	const uint8_t						*key,
-	const uint8_t						*iv
+	aes_ctx_t		*ctx,
+	aes_memcpy_fn_t	memcpy_hook,
+	const uint8_t	*key,
+	const uint8_t	*iv
 );
 
 /**
@@ -34,12 +55,11 @@ AES_init_ctx_iv(
  */
 void
 AES_CBC_decrypt_buffer(
-	const mftah_registration_details_t	*meta,
-	struct AES_ctx						*ctx,
-	uint8_t								*buf,
-	uint64_t							length,
-	mftah_fp__progress_hook_t			progress,
-	void								*progress_extra
+	aes_ctx_t			*ctx,
+	uint8_t				*buf,
+	uint64_t			length,
+	aes_progress_fn_t	progress,
+	void				*progress_extra
 );
 
 /**
@@ -47,12 +67,11 @@ AES_CBC_decrypt_buffer(
  */
 void
 AES_CBC_encrypt_buffer(
-	const mftah_registration_details_t	*meta,
-	struct AES_ctx						*ctx,
-	uint8_t								*buf,
-	uint64_t							length,
-	mftah_fp__progress_hook_t			progress,
-	void								*progress_extra
+	aes_ctx_t			*ctx,
+	uint8_t				*buf,
+	uint64_t			length,
+	aes_progress_fn_t	progress,
+	void				*progress_extra
 );
 
 

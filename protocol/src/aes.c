@@ -426,23 +426,23 @@ XorWithIv(
 
 void
 AES_init_ctx_iv(
-	const mftah_registration_details_t *meta,
-	struct AES_ctx *ctx,
+	aes_ctx_t *ctx,
+	aes_memcpy_fn_t memcpy_hook,
 	const uint8_t *key,
 	const uint8_t *iv
 ) {
 	KeyExpansion(ctx->RoundKey, key);
-	meta->memcpy(ctx->Iv, iv, AES_BLOCKLEN);
+	memcpy_hook(ctx->Iv, iv, AES_BLOCKLEN);
+	ctx->MemcpyHook = memcpy_hook;
 }
 
 
 void
 AES_CBC_decrypt_buffer(
-	const mftah_registration_details_t *meta,
-	struct AES_ctx *ctx,
+	aes_ctx_t *ctx,
 	uint8_t *buf,
 	uint64_t length,
-	mftah_fp__progress_hook_t progress,
+	aes_progress_fn_t progress,
 	void *progress_extra
 ) {
 	uint64_t i;
@@ -453,12 +453,12 @@ AES_CBC_decrypt_buffer(
 		if (progress && 0 == (i % (1 << 22)))
 			progress(&i, &length, progress_extra);
 
-		meta->memcpy(storeNextIv, buf, AES_BLOCKLEN);
+		ctx->MemcpyHook(storeNextIv, buf, AES_BLOCKLEN);
 
 		InvCipher((state_t *)buf, ctx->RoundKey);
 		XorWithIv(buf, ctx->Iv);
 
-		meta->memcpy(ctx->Iv, storeNextIv, AES_BLOCKLEN);
+		ctx->MemcpyHook(ctx->Iv, storeNextIv, AES_BLOCKLEN);
 		buf += AES_BLOCKLEN;
 	}
 	if (progress)
@@ -468,11 +468,10 @@ AES_CBC_decrypt_buffer(
 
 void
 AES_CBC_encrypt_buffer(
-	const mftah_registration_details_t *meta,
-	struct AES_ctx *ctx,
+	aes_ctx_t *ctx,
 	uint8_t *buf,
 	uint64_t length,
-	mftah_fp__progress_hook_t progress,
+	aes_progress_fn_t progress,
 	void *progress_extra
 ) {
 	uint64_t i;
@@ -488,7 +487,7 @@ AES_CBC_encrypt_buffer(
 		buf += AES_BLOCKLEN;
 	}
 	/* store Iv in ctx for next call */
-	meta->memcpy(ctx->Iv, Iv, AES_BLOCKLEN);
+	ctx->MemcpyHook(ctx->Iv, Iv, AES_BLOCKLEN);
 	if (progress)
 		progress(&length, &length, progress_extra);
 }

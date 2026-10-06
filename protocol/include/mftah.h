@@ -111,14 +111,16 @@ typedef enum
 } mftah_log_level_t;
 
 
-/* Registration information associated with each MFTAH protocol instance. */
+typedef void *(*mftah_memcpy_fn_t)(void *restrict, const void *restrict, size_t);
+
+/* Function hooks employed by the MFTAH instance. */
 typedef struct
 {
 	void  (*printf)  (mftah_log_level_t level, const char *restrict fmt, ...);
 	void *(*malloc)  (size_t size);
 	void *(*calloc)  (size_t count, size_t size);
 	void *(*realloc) (void *at, size_t to_size);
-	void *(*memcpy)  (void *restrict dst, const void *restrict src, size_t length);
+	mftah_memcpy_fn_t memcpy;
 	void *(*memset)  (void *at, int value, size_t length);
 	void *(*memmove) (void *dst, const void *src, size_t length);
 	int   (*memcmp)  (const void *s1, const void *s2, size_t length);
