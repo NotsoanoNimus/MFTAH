@@ -1434,7 +1434,7 @@ mftah_stream_encrypt_next(
 			(immutable_ref_t)context->current_nonce,
 			NULL
 		);
-		if (MEWL_ERROR(status)) return status;
+		if (MFTAH_ERROR(status)) return status;
 
 		/* Yield the initial thin payload header. */
 		// TODO: Think this data must be randomized before being sent?
@@ -1682,8 +1682,8 @@ mftah_stream_decrypt_next(
 			/* Record decrypted contents into O-HMAC. */
 			hmac_sha256_write(
 				(HmacSha256Context *)context->ohmac_context,
-				(immutable_ref_t)context->prev_buffer,
-				(immutable_ref_t)context->prev_buffer_length
+				context->prev_buffer,
+				context->prev_buffer_length
 			);
 			/* At last, yield the contents of the previous block. */
 			context->yield_callback(context->prev_buffer, context->prev_buffer_length);

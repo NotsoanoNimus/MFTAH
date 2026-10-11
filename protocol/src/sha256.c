@@ -367,10 +367,10 @@ hmac_sha256_init(
 		ctx->k_opad[i] ^= ctx->k[i];
 	}
 
-	sha_256_init(memcpy, memset, &ctx->inner_sha_ctx, ctx->inner);
+	sha_256_init(&ctx->inner_sha_ctx, memcpy, memset, ctx->inner);
 	sha_256_write(&ctx->inner_sha_ctx, ctx->k_ipad, sizeof(ctx->k_ipad));
 
-	sha_256_init(memcpy, memset, &ctx->outer_sha_ctx, ctx->outer);
+	sha_256_init(&ctx->outer_sha_ctx, memcpy, memset, ctx->outer);
 	sha_256_write(&ctx->outer_sha_ctx, ctx->k_opad, sizeof(ctx->k_opad));
 }
 

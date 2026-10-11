@@ -218,7 +218,7 @@ typedef enum : uint8_t
 {
 	MFTAH_PBKDF2_HMAC_SHA256_800000		= 1,
 	MFTAH_BCRYPT_12						= 2
-} MftahPasswordType;
+} MftahPasswordHashType;
 
 typedef struct
 {
