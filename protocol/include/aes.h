@@ -27,8 +27,7 @@ void
 );
 
 
-typedef
-struct AES_ctx
+typedef struct
 {
 	uint8_t RoundKey[AES_keyExpSize];
 	uint8_t Iv[AES_BLOCKLEN];
@@ -51,7 +50,7 @@ AES_init_ctx_iv(
  * The buffer size MUST be a mutiple of AES_BLOCKLEN.
  * NOTES:
  *   - Need to set IV in ctx via AES_init_ctx_iv()
- *   - No IV should ever be reused with the same key 
+ *   - No IV should ever be reused with the same key
  */
 void
 AES_CBC_decrypt_buffer(

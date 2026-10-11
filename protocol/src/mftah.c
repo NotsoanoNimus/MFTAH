@@ -4,15 +4,15 @@
  *
  *
  * Copyright (C) 2024-2026 Zack Puhl <github@xmit.xyz>
- * 
+ *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
  * Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see https://www.gnu.org/licenses/.
  */
@@ -130,46 +130,46 @@ mix_vectors(mftah_immutable_protocol_t self,
 			mftah_payload_header_t *header,
 			uint8_t threads)
 {
-	/* NOTE: This MUST be done because the same IV should NEVER be used with different, 
+	/* NOTE: This MUST be done because the same IV should NEVER be used with different,
 		non-sequential blocks of data. This effectively mixes IVs for each block with a
 		random IV seed in an XOR chain from the previous one. */
-	PRINTLN(MFTAH_LEVEL_DEBUG, "Mixing initialization vectors (%u : %u).", threads, header->iv_seed_step);
-	uint8_t *mixed_vectors = self->hooks.calloc(1, (threads * sizeof(header->initialization_vector)));
+	PRINTLN(MFTAH_LEVEL_DEBUG, "Mixing initialization vectors (%u : %u).", threads, header->nonce_seed_step);
+	uint8_t *mixed_vectors = self->hooks.calloc(1, (threads * sizeof(header->nonce)));
 
 	/* The first IV is equivalent to the "public" one used on the header. */
 	self->hooks.memcpy(mixed_vectors,
-					   header->initialization_vector,
-					   sizeof(header->initialization_vector));
-	MEMDUMP_MSG(mixed_vectors, sizeof(header->initialization_vector), "\nIV #0:");
+					   header->nonce,
+					   sizeof(header->nonce));
+	MEMDUMP_MSG(mixed_vectors, sizeof(header->nonce), "\nIV #0:");
 
 	/* The rest of them sequentially mix with the previous vector. */
 	/* NOTE: We only go up to 'threads-1' because the first IV is already set up (see above). */
 	for (uint8_t t = 0; t < (threads - 1); ++t) {
-		size_t iv_base_offset = (t + 1) * sizeof(header->initialization_vector);
+		size_t iv_base_offset = (t + 1) * sizeof(header->nonce);
 
 		/* Only include the 'step' in the XOR if all seeds have already been used once. */
-		uint8_t step = (threads >= sizeof(header->iv_seeds)) ? header->iv_seed_step : 0x00;
+		uint8_t step = (threads >= sizeof(header->nonce_seeds)) ? header->nonce_seed_step : 0x00;
 
 		/* The index of which seed to use depends on whether we've wrapped around once.
 			And the value AT sizeof(seeds) is NOT included in this rotation. */
-		uint8_t seed_position = t < sizeof(header->iv_seeds) ? t : (t % sizeof(header->iv_seeds));
+		uint8_t seed_position = t < sizeof(header->nonce_seeds) ? t : (t % sizeof(header->nonce_seeds));
 
 		/* When the thread count has first passed the seeds available, use just the 'seed-step' to XOR the IV. */
-		uint8_t seed = (threads == sizeof(header->iv_seeds)) ? 0x00 : (header->iv_seeds[seed_position]);
+		uint8_t seed = (threads == sizeof(header->nonce_seeds)) ? 0x00 : (header->nonce_seeds[seed_position]);
 
 		PRINTLN(MFTAH_LEVEL_DEBUG, "MIX -- (%u : %u : %u)", (t + 1), step, seed_position);
 
 		/* Now that we've got what we need, do the XOR. */
-		for (size_t x = 0; x < sizeof(header->initialization_vector); ++x) {
+		for (size_t x = 0; x < sizeof(header->nonce); ++x) {
 			mixed_vectors[iv_base_offset + x]
 				= (
-					mixed_vectors[(iv_base_offset + x) - sizeof(header->initialization_vector)]
+					mixed_vectors[(iv_base_offset + x) - sizeof(header->nonce)]
 					^ (step ^ seed)
 				);
 		}
 
 		/* Dump it so it's visible during debugging. */
-		MEMDUMP_MSG(((size_t)mixed_vectors + iv_base_offset), sizeof(header->initialization_vector), "IV #%u:", (t + 1));
+		MEMDUMP_MSG(((size_t)mixed_vectors + iv_base_offset), sizeof(header->nonce), "IV #%u:", (t + 1));
 	}
 
 	return mixed_vectors;
@@ -200,7 +200,7 @@ mftah_register(IN mftah_immutable_protocol_t self,
 		sizeof(mftah_registration_details_t)
 	);
 
-	PRINTLN(MFTAH_LEVEL_DEBUG, "\n=== REGISTER call (completed) ===\n");
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== REGISTER call (completed) ===");
 
 	return MFTAH_SUCCESS;
 }
@@ -214,7 +214,7 @@ create(IN mftah_immutable_protocol_t self,
 	   IN OUT mftah_payload_t *new_payload,
 	   OUT uint64_t *new_payload_len OPTIONAL)
 {
-	PRINTLN(MFTAH_LEVEL_DEBUG, "\n=== CREATE call ===\n");
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== CREATE call ===");
 
 	/* NOTE: This API call is not responsible for freeing any input pointers. */
 	if (
@@ -300,7 +300,7 @@ encrypt(IN mftah_immutable_protocol_t self,
 	uint64_t total_crypt_size = 0;
 	uint8_t hmac_len = SIZE_OF_SHA_256_HASH;
 
-	PRINTLN(MFTAH_LEVEL_DEBUG, "\n=== ENCRYPT call ===\n");
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== ENCRYPT call ===");
 
 	/* Defensive programming be like.. */
 	if (
@@ -363,7 +363,7 @@ encrypt(IN mftah_immutable_protocol_t self,
 			payload_base = payload->buffer_base + sizeof(mftah_payload_header_t);
 			header = (mftah_payload_header_t *)payload->buffer_base;
 		}
-		
+
 		/* Pad the ending with 0xFF values and update the stored actual data length. */
 		self->hooks.memset((void *)(payload_base + payload->actual_data_length), 0xFF, remainder);
 
@@ -386,8 +386,8 @@ encrypt(IN mftah_immutable_protocol_t self,
 	status = self->random(self,
 						  0,
 						  0,
-						  sizeof(header->initialization_vector),
-						  header->initialization_vector);
+						  sizeof(header->nonce),
+						  header->nonce);
 	if (MFTAH_ERROR(status)) {
 		return MFTAH_BAD_IV;
 	}
@@ -397,10 +397,10 @@ encrypt(IN mftah_immutable_protocol_t self,
 	status = self->random(self,
 						  0,
 						  0,
-						  sizeof(header->iv_seeds),
-						  header->iv_seeds);
+						  sizeof(header->nonce_seeds),
+						  header->nonce_seeds);
 	if (MFTAH_ERROR(status)) {
-		return MFTAH_BAD_IV_SEEDS;
+		return MFTAH_BAD_NONCE_SEEDS;
 	}
 
 	/* Randomize the IV step value. This CANNOT be zero. */
@@ -409,15 +409,15 @@ encrypt(IN mftah_immutable_protocol_t self,
 		status = self->random(self,
 							  0,
 							  0,
-							  sizeof(header->iv_seed_step),
-							  &(header->iv_seed_step));
-	} while (0 == header->iv_seed_step);
+							  sizeof(header->nonce_seed_step),
+							  &(header->nonce_seed_step));
+	} while (0 == header->nonce_seed_step);
 
 	MEMDUMP_MSG(password_hash, SIZE_OF_SHA_256_HASH, "Got loaded password hash:");
-	MEMDUMP_MSG(header->initialization_vector, sizeof(header->initialization_vector), "Using first IV:");
+	MEMDUMP_MSG(header->nonce, sizeof(header->nonce), "Using first IV:");
 	MEMDUMP_MSG(header->signature, MFTAH_PAYLOAD_SIGNATURE_SIZE, "Original Signature:");
-	MEMDUMP_MSG(header->iv_seeds, sizeof(header->iv_seeds), "IV Seeds:"); PRINT(MFTAH_LEVEL_DEBUG, "\n");
-	MEMDUMP_MSG(&(header->iv_seed_step), sizeof(header->iv_seed_step), "Seed step value:"); PRINT(MFTAH_LEVEL_DEBUG, "\n");
+	MEMDUMP_MSG(header->nonce_seeds, sizeof(header->nonce_seeds), "IV Seeds:"); PRINT(MFTAH_LEVEL_DEBUG, "\n");
+	MEMDUMP_MSG(&(header->nonce_seed_step), sizeof(header->nonce_seed_step), "Seed step value:"); PRINT(MFTAH_LEVEL_DEBUG, "\n");
 
 	PRINTLN(MFTAH_LEVEL_DEBUG, "Populating other header details.");
 	header->thread_count = threads;
@@ -453,7 +453,7 @@ encrypt(IN mftah_immutable_protocol_t self,
 	crypt_callback(self,
 				   &work_order,
 				   (immutable_ref_t)password_hash,
-				   (immutable_ref_t)header->initialization_vector,
+				   (immutable_ref_t)header->nonce,
 				   NULL);
 	if (NULL != spin_callback) {
 		uint64_t addl_size = MFTAH_HEADER_ENCRYPT_ADDL_SIZE;
@@ -487,7 +487,7 @@ encrypt(IN mftah_immutable_protocol_t self,
 		crypt_callback(self,
 					   &work_order,
 					   (immutable_ref_t)password_hash,
-					   (immutable_ref_t)&(mixed_vectors[t * sizeof(header->initialization_vector)]),
+					   (immutable_ref_t)&(mixed_vectors[t * sizeof(header->nonce)]),
 					   NULL);
 	}
 
@@ -537,7 +537,7 @@ get_decrypted_header(IN mftah_immutable_protocol_t self,
 	mftah_work_order_t new_order = {0};
 	uint8_t password_hash[SIZE_OF_SHA_256_HASH] = {0};
 
-	PRINTLN(MFTAH_LEVEL_DEBUG, "\n=== GET DECRYPTED HEADER call ===\n");
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== GET DECRYPTED HEADER call ===");
 
 	if (
 		NULL == self
@@ -583,7 +583,7 @@ get_decrypted_header(IN mftah_immutable_protocol_t self,
 	status = crypt_callback(self,
 							&new_order,
 							password_hash,
-							header->initialization_vector,
+							header->nonce,
 							NULL);
 	if (MFTAH_ERROR(status)) {
 		self->hooks.free(header_copy);
@@ -612,7 +612,7 @@ check_password(IN mftah_immutable_protocol_t self,
 	mftah_status_t status = MFTAH_SUCCESS;
 	mftah_payload_header_t *decrypted_header = NULL;
 
-	PRINTLN(MFTAH_LEVEL_DEBUG, "\n=== CHECK PASSWORD call ===\n");
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== CHECK PASSWORD call ===");
 
 	if (
 		NULL == self
@@ -678,7 +678,7 @@ decrypt(IN mftah_immutable_protocol_t self,
 	uint64_t stored_length = 0;
 	uint8_t threads = 0;
 
-	PRINTLN(MFTAH_LEVEL_DEBUG, "\n=== DECRYPT call ===\n");
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== DECRYPT call ===");
 
 	if (
 		NULL == self
@@ -728,7 +728,7 @@ decrypt(IN mftah_immutable_protocol_t self,
 		MFTAH_LEVEL_DEBUG,
 		"Got original length (%llu), IV step (%u), and thread count (%d).",
 		stored_length,
-		header->iv_seed_step,
+		header->nonce_seed_step,
 		threads
 	);
 	payload->actual_data_length = stored_length;
@@ -807,7 +807,7 @@ decrypt(IN mftah_immutable_protocol_t self,
 		crypt_callback(self,
 					   &work_order,
 					   (immutable_ref_t)password_hash,
-					   (immutable_ref_t)&(mixed_vectors[t * sizeof(header->initialization_vector)]),
+					   (immutable_ref_t)&(mixed_vectors[t * sizeof(header->nonce)]),
 					   NULL);
 	}
 
@@ -870,7 +870,7 @@ rekey(IN mftah_immutable_protocol_t self,
 {
 	mftah_status_t status = MFTAH_SUCCESS;
 
-	PRINTLN(MFTAH_LEVEL_DEBUG, "\n=== REKEY call ===\n");
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== REKEY call ===");
 
 	if (
 		NULL == self
@@ -940,7 +940,7 @@ hash(IN mftah_immutable_protocol_t self,
 	uint8_t length = 0;
 	uint8_t intermediate_result[SIZE_OF_SHA_256_HASH] = {0};
 
-	PRINTLN(MFTAH_LEVEL_DEBUG, "\n=== CREATE HASH call ===\n");
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== CREATE HASH call ===");
 
 	if (
 		NULL == self
@@ -955,10 +955,13 @@ hash(IN mftah_immutable_protocol_t self,
 		? MIN(SIZE_OF_SHA_256_HASH, *result_length)
 		: SIZE_OF_SHA_256_HASH;
 
-	calc_sha_256(self,
-				 intermediate_result,
-				 input,
-				 input_length);
+	calc_sha_256(
+		self->hooks.memcpy,
+		self->hooks.memset,
+		intermediate_result,
+		input,
+		input_length
+	);
 
 	self->hooks.memcpy(result, intermediate_result, length);
 
@@ -983,7 +986,7 @@ hmac(IN mftah_immutable_protocol_t self,
 	uint8_t length = 0;
 	uint8_t intermediate_result[SIZE_OF_SHA_256_HASH] = {0};
 
-	PRINTLN(MFTAH_LEVEL_DEBUG, "\n=== CREATE HMAC call ===\n");
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== CREATE HMAC call ===");
 
 	if (
 		NULL == self
@@ -995,12 +998,15 @@ hmac(IN mftah_immutable_protocol_t self,
 		return MFTAH_INVALID_PARAMETER;
 	}
 
-	hmac_sha256(self,
-				key,
-				key_length,
-				input,
-				input_length,
-				intermediate_result);
+	hmac_sha256(
+		self->hooks.memcpy,
+		self->hooks.memset,
+		key,
+		key_length,
+		input,
+		input_length,
+		intermediate_result
+	);
 
 	length = (NULL != result_length)
 		? MIN(SIZE_OF_SHA_256_HASH, *result_length)
@@ -1029,7 +1035,7 @@ mftahrand(IN mftah_immutable_protocol_t self,
 	uint8_t chunk_size = 0;
 	uint8_t *scroll = result;
 
-	PRINTLN(MFTAH_LEVEL_DEBUG, "\n=== RANDOM call ===\n");
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== RANDOM call ===");
 
 	if (0 == count) {
 		return MFTAH_SUCCESS;
@@ -1050,7 +1056,7 @@ mftahrand(IN mftah_immutable_protocol_t self,
 		*rand = (minimum | maximum)
 			? prng_next_bounded(minimum, maximum)
 			: prng_next();
-		
+
 		self->hooks.memcpy(scroll, rand, chunk_size);
 
 		len -= chunk_size;
@@ -1068,7 +1074,7 @@ mftah_status_t
 refresh_state(IN mftah_immutable_protocol_t self,
 			  IN mftah_payload_t *payload)
 {
-	PRINTLN(MFTAH_LEVEL_DEBUG, "\n=== REFRESH STATE call ===\n");
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== REFRESH STATE call ===");
 
 	if (NULL == payload) {
 		return MFTAH_INVALID_PARAMETER;
@@ -1119,7 +1125,7 @@ yield(IN mftah_immutable_protocol_t self,
 	uint64_t total = 0;
 	uint8_t *scroll = NULL;
 
-	PRINTLN(MFTAH_LEVEL_DEBUG, "\n=== YIELD call ===\n");
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== YIELD call ===");
 
 	if (
 		NULL == payload
@@ -1168,7 +1174,7 @@ yield(IN mftah_immutable_protocol_t self,
 	do {
 		/* Be careful to write only the actual data remainder and not a
 			full block at the end of the buffer. */
-		write_size = 
+		write_size =
 			((total + requested_chunk_size) > buffer_length)
 				? (buffer_length - total)
 				: requested_chunk_size;
@@ -1191,14 +1197,642 @@ yield(IN mftah_immutable_protocol_t self,
 }
 
 
+/****************************** */
+/****************************** */
+/****************************** */
+/* Streaming protocol declarations. */
+static
+mftah_status_t
+mftah_stream_register(
+	IN mftah_stream_immutable_protocol_t self,
+	IN CONST mftah_registration_details_t *CONST registration_details
+) {
+	if (NULL == self || NULL == registration_details)
+		return MFTAH_INVALID_PARAMETER;
+	registration_details->memcpy(
+		(void *restrict)&(self->hooks),
+		registration_details,
+		sizeof(mftah_registration_details_t)
+	);
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== STREAM REGISTER call (completed) ===");
+	return MFTAH_SUCCESS;
+}
+
+
+static
+mftah_status_t
+mftah_stream_init(
+	IN mftah_stream_immutable_protocol_t self,
+	IN MftahMode stream_mode,
+	IN immutable_ref_t key,
+	IN uint64_t key_length,
+	IN uint64_t base_block_size,
+	IN mftah_fp__yield_callback yield_callback,
+	OUT mftah_stream_context_t **new_context
+) {
+	mftah_stream_context_t *new_ctx;
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== STREAM INIT call ===");
+	if (NULL == self || NULL == yield_callback || NULL == new_context
+		|| (MFTAH_MODE_ENCRYPT != stream_mode && MFTAH_MODE_DECRYPT != stream_mode)
+	) return MFTAH_INVALID_PARAMETER;
+	else if (
+		base_block_size < MFTAH_STREAM_MIN_FACTOR
+		|| base_block_size > MFTAH_STREAM_MAX_FACTOR
+	) return MFTAH_BAD_block_size;
+
+	new_ctx = self->hooks.calloc(1, sizeof(mftah_stream_context_t));
+	if (NULL == new_ctx) return MFTAH_OUT_OF_RESOURCES;
+
+	new_ctx->mode = stream_mode;
+	new_ctx-> block_size = mftah_get_stream_bufsz(base_block_size);
+	new_ctx->yield_callback = yield_callback;
+
+	new_ctx->stream_buffer = self->hooks.malloc(new_ctx->block_size);
+	if (NULL == new_ctx->stream_buffer) return MFTAH_OUT_OF_RESOURCES;
+
+	new_ctx->input_header = self->hooks.calloc(1, sizeof(mftah_payload_header_t));
+	if (NULL == new_ctx->input_header) return MFTAH_OUT_OF_RESOURCES;
+	new_ctx->constructed_header = self->hooks.calloc(1, sizeof(mftah_payload_header_t));
+	if (NULL == new_ctx->constructed_header) return MFTAH_OUT_OF_RESOURCES;
+
+	new_ctx->ohmac = self->hooks.calloc(1, SIZE_OF_SHA_256_HASH);// TODO: pinned to HMAC-SHA256
+	if (NULL == new_ctx->ohmac) return MFTAH_OUT_OF_RESOURCES;
+	new_ctx->ohmac_context = self->hooks.calloc(1, sizeof(HmacSha256Context));
+	if (NULL == new_ctx->ohmac_context) return MFTAH_OUT_OF_RESOURCES;
+	hmac_sha256_init(
+		new_ctx->ohmac_context,
+		self->hooks.memcpy,
+		self->hooks.memset,
+		(const void *)key,
+		(size_t)key_length
+	);
+
+	new_ctx->whmac = self->hooks.calloc(1, SIZE_OF_SHA_256_HASH);// TODO: pinned to HMAC-SHA256
+	if (NULL == new_ctx->whmac) return MFTAH_OUT_OF_RESOURCES;
+	new_ctx->whmac_context = self->hooks.calloc(1, sizeof(HmacSha256Context));
+	if (NULL == new_ctx->whmac_context) return MFTAH_OUT_OF_RESOURCES;
+	hmac_sha256_init(
+		new_ctx->whmac_context,
+		self->hooks.memcpy,
+		self->hooks.memset,
+		(const void *)key,
+		(size_t)key_length
+	);
+
+	new_ctx->hashed_key = self->hooks.malloc(SIZE_OF_SHA_256_HASH);
+	if (NULL == new_ctx->hashed_key) return MFTAH_OUT_OF_RESOURCES;
+	calc_sha_256(
+		self->hooks.memcpy,
+		self->hooks.memset,
+		new_ctx->hashed_key,
+		(const void *)key,
+		(size_t)key_length
+	);
+
+	new_ctx->current_nonce = self->hooks.malloc(AES_BLOCKLEN);// TODO: pinned to AES-CBC
+	if (NULL == new_ctx->current_nonce) return MFTAH_OUT_OF_RESOURCES;
+
+	new_ctx->crypt_ctx = self->hooks.calloc(1, sizeof(aes_ctx_t));
+	if (NULL == new_ctx->crypt_ctx) return MFTAH_OUT_OF_RESOURCES;
+
+	/* If the mode is DECRYPT, initialize some necessary shadow buffers. */
+	if (MFTAH_MODE_DECRYPT == stream_mode)
+	{
+		new_ctx->prev_buffer = self->hooks.calloc(1, new_ctx->block_size);
+		if (NULL == new_ctx->prev_buffer) return MFTAH_OUT_OF_RESOURCES;
+		new_ctx->prev_nonce = self->hooks.calloc(1, AES_BLOCKLEN);
+		if (NULL == new_ctx->prev_nonce) return MFTAH_OUT_OF_RESOURCES;
+	}
+
+	*new_context = new_ctx;
+
+	PRINTLN(MFTAH_LEVEL_DEBUG, "== STREAM INIT call (completed) ===");
+	return MFTAH_SUCCESS;
+}
+
+
+static
+mftah_status_t
+mftah_stream_check_password(
+	IN mftah_stream_immutable_protocol_t self,
+	IN mftah_stream_context_t *context
+) {
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== STREAM CHECK PASSWORD call ===");
+
+	if (0 == context->block_counter)
+		return MFTAH_MISPLACED_PASSWORD_CHECK;
+	self->hooks.memcpy(
+		context->input_header,
+		context->stream_buffer,
+		sizeof(mftah_payload_header_t)
+	);
+
+	PRINTLN(MFTAH_LEVEL_DEBUG, "Read stream payload header...");
+	MEMDUMP(context->input_header, sizeof(mftah_payload_header_t));
+
+	/* Ensure the payload is designated as a stream type, or this won't work. */
+	if (
+		0 == context->input_header->stream_flags.stream
+		|| context->input_header->stream_flags.canary
+	) return MFTAH_INVALID_STREAM_STATE;
+
+	if (!context->prefilled_input_header)
+	{
+		AES_init_ctx_iv(
+			(aes_ctx_t *)context->crypt_ctx,
+			self->hooks.memcpy,
+			context->hashed_key,
+			context->input_header->nonce
+		);
+		PRINTLN(MFTAH_LEVEL_DEBUG, "Forming streamed header decryption work order.");
+		mftah_work_order_t new_order = {
+			.type = MFTAH_WORK_TYPE_DECRYPT,
+			.location = &((uint8_t *)context->input_header)[MFTAH_HEADER_ENCRYPT_OFFSET],
+			.length = MFTAH_HEADER_ENCRYPT_ADDL_SIZE,
+			.thread_index = 0,
+			.suppress_progress = 1
+		};
+		mftah_status_t crypt_status = MFTAH_CRYPT_HOOK_DEFAULT(
+			(mftah_immutable_protocol_t)self,
+			&new_order,
+			(immutable_ref_t)context->hashed_key,
+			(immutable_ref_t)context->input_header->nonce,
+			NULL
+		);
+		if(MFTAH_ERROR(crypt_status))
+			return crypt_status;
+	}
+
+	if (0 != self->hooks.memcmp(
+		context->input_header->signature,
+		MftahPayloadSignature,
+		MFTAH_PAYLOAD_SIGNATURE_SIZE)
+	) return MFTAH_INVALID_PASSWORD;
+
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== STREAM CHECK PASSWORD call (completed) ===");
+	return MFTAH_SUCCESS;
+}
+
+
+static
+mftah_status_t
+mftah_stream_encrypt_next(
+	IN mftah_stream_immutable_protocol_t self,
+	IN uint64_t length,
+	IN mftah_stream_context_t *context
+) {
+	mftah_status_t status = MFTAH_SUCCESS;
+	size_t block_padding = 0;
+	uint64_t original_length = length;
+	mftah_work_order_t new_order = {
+		.type = MFTAH_WORK_TYPE_ENCRYPT,
+		.thread_index = 0,
+		.suppress_progress = 1
+	};
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== STREAM ENCRYPT NEXT call ===");
+
+	if (0 == context->block_counter)   /* First block? */
+	{
+		// TODO: perhaps this could be moved to another function
+		mftah_status_t rand_status = mftahrand(
+			(mftah_immutable_protocol_t)self,
+			0,
+			0,
+			AES_BLOCKLEN,
+			context->current_nonce
+		);
+		if (MFTAH_ERROR(rand_status)) return rand_status;
+
+		mftah_payload_header_t *hdr = context->constructed_header;
+		self->hooks.memcpy(hdr->nonce, context->current_nonce, AES_BLOCKLEN);
+		rand_status = mftahrand(
+			(mftah_immutable_protocol_t)self, 0, 0, sizeof(hdr->nonce_seeds), hdr->nonce_seeds);
+		if (MFTAH_ERROR(rand_status)) return rand_status;
+		hdr->stream_flags = (MftahStreamFlags){
+			.stream = 1,
+			.canary = 0,
+			.block_size = ((context->block_size / (1ULL << 18)) >> 4ULL) & 0x1F
+		};
+		self->hooks.memcpy(hdr->magic, MftahMagic, MFTAH_MAGIC_SIGNATURE_SIZE);
+		self->hooks.memcpy(hdr->signature, MftahPayloadSignature, MFTAH_PAYLOAD_SIGNATURE_SIZE);
+		hdr->version_info[0] = LIBMFTAH_VERSION_MAJOR;
+		hdr->version_info[1] = LIBMFTAH_VERSION_MINOR;
+		hdr->version_info[2] = LIBMFTAH_VERSION_PATCH;
+		// TODO: init other header fields here
+
+		/* Duplicate and encrypt the tail end of the header. */
+		mftah_payload_header_t *dupe = self->hooks.malloc(sizeof(mftah_payload_header_t));
+		if (NULL == dupe) return MFTAH_OUT_OF_RESOURCES;
+		self->hooks.memcpy(dupe, hdr, sizeof(mftah_payload_header_t));
+
+		new_order.location = &((uint8_t* )hdr)[MFTAH_HEADER_ENCRYPT_OFFSET];
+		new_order.length = MFTAH_HEADER_ENCRYPT_ADDL_SIZE;
+		status = MFTAH_CRYPT_HOOK_DEFAULT(
+			(mftah_immutable_protocol_t)self,
+			&new_order,
+			(immutable_ref_t)context->hashed_key,
+			(immutable_ref_t)context->current_nonce,
+			NULL
+		);
+		if (MEWL_ERROR(status)) return status;
+
+		/* Yield the initial thin payload header. */
+		// TODO: Think this data must be randomized before being sent?
+		//   ^ before the con-header fields are filled here
+		context->yield_callback((uint8_t *)hdr, sizeof(mftah_payload_header_t));
+		context->yielded_bytes += sizeof(mftah_payload_header_t);   // TODO why isn't this just done inside the yield cb?
+		self->hooks.free(dupe);
+	}
+
+	/* Roll the nonce data for the next block based on the seeds array and the current block number.
+		This purposefully happens on the first block of encrypted data to prevent nonce reuse. */
+	for (int i = 0; i < AES_BLOCKLEN; ++i)
+		context->current_nonce[i] ^= (
+			context->constructed_header->nonce_seeds[
+				context->block_counter % sizeof(context->constructed_header->nonce_seeds)
+			] ^ context->hashed_key[i]
+		);
+
+	/* Record the plaintext block to the O-HMAC context. */
+	hmac_sha256_write(
+		(HmacSha256Context *)context->ohmac_context,
+		context->stream_buffer,
+		length
+	);
+
+	/* If this is the last block, take care of padding to round the block. */
+	// TODO: PKCS7 padding, not w/e tf this is
+	if (length != context->block_size)
+	{
+		if (!(length % AES_BLOCKLEN))
+		{
+			if (length + sizeof(mftah_payload_header_t) < context->block_size) goto nopadding;
+		}
+		else
+		{
+			block_padding = AES_BLOCKLEN - (length % AES_BLOCKLEN);
+			length += block_padding;
+		}
+		if (length + sizeof(mftah_payload_header_t) >= context->block_size)
+		{
+			PRINTLN(MFTAH_LEVEL_DEBUG, "Forwarding trailing header to a final stream block.");
+			block_padding += (context->block_size - length);
+			length = context->block_size;
+		}
+		/* Turn padding into 0xFF bytes. */
+		self->hooks.memset(
+			&context->stream_buffer[original_length],
+			0xFF,
+			block_padding
+		);
+	}
+
+nopadding:
+	/* Encrypt... */
+	new_order.length = length;
+	new_order.location = context->stream_buffer;
+	status = MFTAH_CRYPT_HOOK_DEFAULT(
+		(mftah_immutable_protocol_t)self,
+		&new_order,
+		(immutable_ref_t)context->hashed_key,
+		(immutable_ref_t)context->current_nonce,
+		NULL
+	);
+	if (MFTAH_ERROR(status)) return status;
+
+	/* Update the W-HMAC context with the ciphertext. */
+	hmac_sha256_write(
+		(HmacSha256Context *)context->whmac_context,
+		context->stream_buffer,
+		length
+	);
+
+	/* Yield ciphertext. */
+	context->yield_callback(context->stream_buffer, length);
+	context->yielded_bytes += length;
+
+	/* This condition indicates the final stream block has been reached, */
+	if (original_length != context->block_size)
+	{
+		/* Wrap up the final trailing header stub. */
+		context->last_block_remainder_length = original_length;
+		context->constructed_header->payload_length =
+			(context->block_size * context->block_counter) + original_length;
+
+		hmac_sha256_close((HmacSha256Context *)context->ohmac_context, context->ohmac);
+		// TODO: store O-HMAC
+		hmac_sha256_close((HmacSha256Context *)context->whmac_context, context->whmac);
+		// TODO: store W-HMAC
+
+		mftah_payload_header_t *dupe = self->hooks.malloc(sizeof(mftah_payload_header_t));
+		if (NULL == dupe) return MFTAH_OUT_OF_RESOURCES;
+		self->hooks.memcpy(dupe, context->constructed_header, sizeof(mftah_payload_header_t));
+
+		new_order.location = &((uint8_t *)dupe)[MFTAH_HEADER_ENCRYPT_OFFSET];
+		new_order.length = MFTAH_HEADER_ENCRYPT_ADDL_SIZE;
+		status = MFTAH_CRYPT_HOOK_DEFAULT(
+			(mftah_immutable_protocol_t)self,
+			&new_order,
+			(immutable_ref_t)context->hashed_key,
+			(immutable_ref_t)context->constructed_header->nonce,
+			NULL
+		);
+		if (MFTAH_ERROR(status)) return status;
+
+		/* Yield the final trailing header. */
+		context->yield_callback((uint8_t *)dupe, sizeof(mftah_payload_header_t));
+		context->yielded_bytes += sizeof(mftah_payload_header_t);
+		self->hooks.free(dupe);
+	}
+	else   /* else, not the final block: increment counter */
+	{
+		++context->block_counter;
+	}
+
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== STREAM ENCRYPT NEXT call (completed) ===");
+	return MFTAH_SUCCESS;
+}
+
+
+static
+mftah_status_t
+mftah_stream_decrypt_next(
+	IN mftah_stream_immutable_protocol_t self,
+	IN uint64_t length,
+	IN mftah_stream_context_t *context
+) {
+	uint8_t *scroll = context->stream_buffer;
+	uint64_t original_length = length;
+	mftah_status_t status = MFTAH_SUCCESS;
+	mftah_work_order_t new_order = {
+		.type = MFTAH_WORK_TYPE_DECRYPT,
+		.suppress_progress = 1,
+		.thread_index = 0
+	};
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== STREAM DECRYPT NEXT call ===");
+
+	if (0 == context->block_counter)
+	{
+		if (!context->prefilled_input_header)
+		{
+			if (length < sizeof(mftah_payload_header_t))
+				return MFTAH_BAD_STREAM_PAYLOAD_LENGTH;
+
+			mftah_status_t pass_status = mftah_stream_check_password(self, context);
+			if (MFTAH_ERROR(pass_status)) return pass_status;
+
+			scroll += sizeof(mftah_payload_header_t);
+			length -= sizeof(mftah_payload_header_t);
+		}
+		self->hooks.memcpy(context->current_nonce, context->input_header->nonce, AES_BLOCKLEN);
+	}
+
+	/* Roll the nonce according to the payload's properties. */
+	for (int i = 0; i < AES_BLOCKLEN; ++i)
+		context->current_nonce[i] ^= (
+			context->constructed_header->nonce_seeds[
+				context->block_counter % sizeof(context->constructed_header->nonce_seeds)
+			] ^ context->hashed_key[i]
+		);
+
+	/**
+	 * Stream-based decryption functions differently from encryption:
+	 * - Payload contents are read and stored into a shadow buffer block-by-block
+	 * - The shadow buffer is decrypted given that the NEXT stream block is not the final one.
+	 * - Once the final block is detected, the trailing payload header is extracted and decrypted.
+	 * - The penultimate (shadow) block is decrypted along with the final one, and the output is
+	 *    trimmed to match the specified length in the trailing header, thus removing any padding.
+	 */
+	/* The final block is always indicated by an incomplete stream block length. */
+	if (original_length != context->block_size)
+	{
+		/* The final block must contain at least an untruncated MFTAH header. */
+		if (original_length < sizeof(mftah_payload_header_t))
+			return MFTAH_BAD_STREAM_PAYLOAD_LENGTH;
+
+		self->hooks.memcpy(
+			context->constructed_header,
+			&scroll[length - sizeof(mftah_payload_header_t)],
+			sizeof(mftah_payload_header_t)
+		);
+		if (0 != self->hooks.memcmp(
+			context->constructed_header, MftahMagic, MFTAH_MAGIC_SIGNATURE_SIZE)
+		) return MFTAH_STREAM_MISSING_POST_HEADER;
+
+		new_order.location
+			= &((uint8_t *)(context->constructed_header))[MFTAH_HEADER_ENCRYPT_OFFSET];
+		new_order.length = MFTAH_HEADER_ENCRYPT_ADDL_SIZE;
+		status = MFTAH_CRYPT_HOOK_DEFAULT(
+			(mftah_immutable_protocol_t)self,
+			&new_order,
+			(immutable_ref_t)context->hashed_key,
+			(immutable_ref_t)context->constructed_header->nonce,
+			NULL
+		);
+		if (MFTAH_ERROR(status)) return status;
+
+		length -= sizeof(mftah_payload_header_t);   /* adjust for the trailing header */
+		uint64_t payload_len = context->constructed_header->payload_length;
+		PRINTLN(MFTAH_LEVEL_DEBUG, "Got actual payload length of %lu bytes.", payload_len);
+		PRINTLN(
+			MFTAH_LEVEL_DEBUG,
+			"===> Length comps: [ len %lu (orig %lu) | yield %lu | prev %lu / report %lu ]",
+			length, original_length, context->yielded_bytes,
+			context->prev_buffer_length, payload_len
+		);
+
+		/* Once the trailing header is decrypted, check the marked length within in. It's possible
+		   that this content block only consists of a header, meaning the shadow/prev block contains
+		   the 0xFF padding. We must trim and discard that during the decryption process. */
+		int ends_in_prev_block = 0;
+		if (0 != context->block_counter)  /* prev buffer only exists when this is true */
+		{
+			/* Record the shadow buffer to the W-HMAC context. */
+			hmac_sha256_write(
+				(HmacSha256Context *)context->whmac_context,
+				context->prev_buffer,
+				context->prev_buffer_length
+			);
+			/* Decrypt the shadow buffer. */
+			new_order.location = context->prev_buffer;
+			new_order.length = context->prev_buffer_length;
+			status = MFTAH_CRYPT_HOOK_DEFAULT(
+				(mftah_immutable_protocol_t)self,
+				&new_order,
+				(immutable_ref_t)context->hashed_key,
+				(immutable_ref_t)context->prev_nonce,
+				NULL
+			);
+			/* Adjust content length to match the actual payload length. */
+			if (context->yielded_bytes + context->prev_buffer_length > payload_len)
+			{
+				context->prev_buffer_length = (payload_len - context->yielded_bytes);
+				PRINTLN(
+					MFTAH_LEVEL_DEBUG,
+					"End of stream in prev block (len %lu -> yield %lu + prev %lu)",
+					payload_len, context->yielded_bytes, context->prev_buffer_length
+				);
+				ends_in_prev_block = 1;
+			}
+			PRINTLN(
+				MFTAH_LEVEL_DEBUG,
+				"Penultimate stream block size %lu of %lu bytes",
+				context->prev_buffer_length, context->block_size
+			);
+			/* Record decrypted contents into O-HMAC. */
+			hmac_sha256_write(
+				(HmacSha256Context *)context->ohmac_context,
+				(immutable_ref_t)context->prev_buffer,
+				(immutable_ref_t)context->prev_buffer_length
+			);
+			/* At last, yield the contents of the previous block. */
+			context->yield_callback(context->prev_buffer, context->prev_buffer_length);
+			context->yielded_bytes += context->prev_buffer_length;
+		}   /* if [prev buffer exists] */
+
+		/* Now that the previous buffer has been handled, finish with the final block. */
+		if (!ends_in_prev_block && length > 0)
+		{
+			/* Record to W-HMAC. */
+			hmac_sha256_write(
+				(HmacSha256Context *)context->whmac_context,
+				context->stream_buffer,
+				length
+			);
+			/* Decrypt. */
+			new_order.location = context->stream_buffer;
+			new_order.length = length;
+			status = MFTAH_CRYPT_HOOK_DEFAULT(
+				(mftah_immutable_protocol_t)self,
+				&new_order,
+				(immutable_ref_t)context->hashed_key,
+				(immutable_ref_t)context->current_nonce,
+				NULL
+			);
+			if (MFTAH_ERROR(status)) return status;
+			/* Trim padding for O-HMAC measurement. */
+			length = payload_len - context->yielded_bytes;
+			PRINTLN(MFTAH_LEVEL_DEBUG, "Final block %lu bytes", length);
+			/* Record to O-HMAC. */
+			hmac_sha256_write(
+				(HmacSha256Context *)context->ohmac_context,
+				context->stream_buffer,
+				length
+			);
+			/* Yield the block. */
+			context->yield_callback(context->stream_buffer, length);
+			context->yielded_bytes += length;
+		} /* if [has final block contents] */
+
+		/* Seal up the HMACs and compare them to the ones in the decrypted trailing header. */
+		hmac_sha256_close((HmacSha256Context *)context->whmac_context, context->whmac);
+		PRINTLN(MFTAH_LEVEL_DEBUG, "Comparing W-HMAC [calc vs. found]...");
+		MEMDUMP(context->whmac, SIZE_OF_SHA_256_HASH);
+		MEMDUMP(context->constructed_header->wrapper_hmac, SIZE_OF_SHA_256_HASH);
+		if (0 != self->hooks.memcmp(
+			context->constructed_header->wrapper_hmac,
+			context->whmac,
+			SIZE_OF_SHA_256_HASH
+		)) return MFTAH_BAD_W_HMAC;
+
+		hmac_sha256_close((HmacSha256Context *)context->ohmac_context, context->ohmac);
+		PRINTLN(MFTAH_LEVEL_DEBUG, "Comparing O-HMAC [calc vs. found]...");
+		MEMDUMP(context->ohmac, SIZE_OF_SHA_256_HASH);
+		MEMDUMP(context->constructed_header->original_hmac, SIZE_OF_SHA_256_HASH);
+		if (0 != self->hooks.memcmp(
+			context->constructed_header->original_hmac,
+			context->ohmac,
+			SIZE_OF_SHA_256_HASH
+		)) return MFTAH_BAD_O_HMAC;
+
+		PRINTLN(MFTAH_LEVEL_DEBUG, "=== STREAM DECRYPT NEXT call (completed) - END ===");
+		return MFTAH_SUCCESS;
+	} /* if [final block of stream] */
+
+	/* === This code only runs for blocks that are full-sized and not the end of the stream. === */
+
+	/* Record the shadow buffer to the W-HMAC context. */
+	hmac_sha256_write(
+		(HmacSha256Context *)context->whmac_context,
+		context->prev_buffer,
+		context->prev_buffer_length
+	);
+	/* Decrypt. */
+	new_order.location = context->prev_buffer;
+	new_order.length = context->prev_buffer_length;
+	status = MFTAH_CRYPT_HOOK_DEFAULT(
+		(mftah_immutable_protocol_t)self,
+		&new_order,
+		(immutable_ref_t)context->hashed_key,
+		(immutable_ref_t)context->prev_nonce,
+		NULL
+	);
+	if (MFTAH_ERROR(status)) return status;
+	/* Record decrypted contents to the O-HMAC context. */
+	hmac_sha256_write(
+		(HmacSha256Context *)context->ohmac_context,
+		context->prev_buffer,
+		context->prev_buffer_length
+	);
+	/* Yield. */
+	context->yield_callback(context->prev_buffer, context->prev_buffer_length);
+	context->yielded_bytes += context->prev_buffer_length;
+
+	/* Track the nonce state. */
+	self->hooks.memcpy(context->prev_nonce, context->current_nonce, AES_BLOCKLEN);
+
+	/* Instead of copying into the shadow buffer, just free the old pointer and swap. */
+	self->hooks.free(context->prev_buffer);
+	context->prev_buffer = context->stream_buffer;
+	context->prev_buffer_length = length;
+	context->stream_buffer = self->hooks.malloc(context->block_size);
+
+	/* Increment block counter. */
+	++context->block_counter;
+
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== STREAM DECRYPT NEXT call (completed) - END ===");
+	return MFTAH_SUCCESS;
+}
+
+
+static
+mftah_status_t
+mftah_stream_process_next(
+	IN mftah_stream_immutable_protocol_t self,
+	IN uint64_t length,
+	IN mftah_stream_context_t *context
+) {
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== STREAM PROCESS NEXT call ===");
+	if (NULL == self || NULL == context)
+		return MFTAH_INVALID_PARAMETER;
+	return (MFTAH_MODE_DECRYPT == context->mode)
+		? mftah_stream_decrypt_next(self, length, context)
+		: mftah_stream_encrypt_next(self, length, context);
+}
+
+
+static
+mftah_status_t
+mftah_stream_close(
+	IN mftah_stream_immutable_protocol_t self,
+	IN mftah_stream_context_t *context
+) {
+	PRINTLN(MFTAH_LEVEL_DEBUG, "=== STREAM CLOSE ===");
+	// TODO: Anything that
+	return MFTAH_SUCCESS;
+}
+
 
 /****************************** */
 /****************************** */
 /****************************** */
 /* Primary concrete module export. */
 mftah_status_t
-mftah_protocol_factory__create(mftah_protocol_t *retval)
-{
+mftah_protocol_factory__create(
+	mftah_protocol_t *retval
+) {
+	if (NULL == retval) return MFTAH_INVALID_PARAMETER;
+
 	retval->register_hooks          = mftah_register;
 	retval->create_payload          = create;
 	retval->encrypt                 = encrypt;
@@ -1213,4 +1847,63 @@ mftah_protocol_factory__create(mftah_protocol_t *retval)
 	retval->yield_payload           = yield;
 
 	return MFTAH_SUCCESS;
+}
+
+
+mftah_status_t
+mftah_stream_protocol_factory__create(
+	mftah_stream_protocol_t *retval
+) {
+	if (NULL == retval) return MFTAH_INVALID_PARAMETER;
+	retval->register_hooks		= mftah_stream_register;
+	retval->init				= mftah_stream_init;
+	retval->check_password		= mftah_stream_check_password;
+	retval->process_next		= mftah_stream_process_next;
+	retval->close				= mftah_stream_close;
+	return MFTAH_SUCCESS;
+}
+
+
+const char *
+mftah_status_to_string(
+	mftah_status_t status
+) {
+	switch (status)
+	{
+		case MFTAH_SUCCESS:						return "Success";
+		case MFTAH_FAIL_GENERIC:				return "Generic failure";
+		case MFTAH_INVALID_PARAMETER:			return "Invalid parameter";
+		case MFTAH_INVALID_ALIGNMENT:			return "Invalid alignment";
+		case MFTAH_OUT_OF_RESOURCES:			return "Out of resources";
+		case MFTAH_INVALID_SIGNATURE:			return "Invalid signature";
+		case MFTAH_BAD_PAYLOAD_STATE:			return "Bad payload state";
+		case MFTAH_PAYLOAD_NOT_DECRYPTED:		return "Payload not decrypted";
+		case MFTAH_INVALID_PASSWORD:			return "Invalid password";
+		case MFTAH_INVALID_THREAD_COUNT:		return "Invalid thread count";
+		case MFTAH_INVALID_ENCRYPTION_TYPE:		return "Invalid encryption type";
+		case MFTAH_INVALID_HMAC_TYPE:			return "Invalid HMAC type";
+		case MFTAH_MISPLACED_PASSWORD_CHECK:	return "Misplaced password check";
+		case MFTAH_BAD_W_HMAC:					return "Bad wrapper HMAC";
+		case MFTAH_BAD_O_HMAC:					return "Bad original HMAC";
+		case MFTAH_BAD_PAYLOAD_LEN:				return "Bad payload length";
+		case MFTAH_BAD_IV:						return "Bad initialization vector";
+		case MFTAH_BAD_NONCE_SEEDS:				return "Bad initialization vector seeds";
+		case MFTAH_BAD_PW_HASH:					return "Bad password hash";
+		case MFTAH_THREAD_BUSY:					return "Thread busy";
+		case MFTAH_INVALID_STREAM_STATE:		return "Invalid stream state";
+		case MFTAH_BAD_block_size:		return "Bad stream block size";
+		case MFTAH_BAD_STREAM_PAYLOAD_LENGTH:	return "Bad stream payload length";
+		case MFTAH_STREAM_MISSING_POST_HEADER:	return "Missing stream post-header";
+		case MFTAH_PREMATURE_END_OF_STREAM:		return "Premature end of stream";
+		case MFTAH_STREAM_LAST_BLOCK_TOO_BIG:	return "Last block too large";
+		default:								return "Unknown status";
+	}
+}
+
+
+uint64_t
+mftah_get_stream_bufsz(
+	uint64_t factor
+) {
+	return ((factor << 4ULL) * (1ULL << 18));
 }

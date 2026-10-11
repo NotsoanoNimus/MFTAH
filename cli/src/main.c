@@ -1,20 +1,17 @@
 /**
- * @file main.c
- * @brief Primary implementation for the `mftahcrypt` CLI tool.
+ * main.c
+ * Primary implementation for the `mftahcrypt` CLI tool.
  *
- * @author Puhl, Zachary (Zack) <zack@crows.dev>
- * @date 2024-10-17
- * 
- * @copyright Copyright (C) 2024 Zack Puhl
- * 
+ * Copyright (C) 2024-2026 Zack Puhl <github@xmit.xyz>
+ *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
  * Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see https://www.gnu.org/licenses/.
  */
@@ -31,10 +28,7 @@
 
 #include <pthread.h>
 
-/* This program assumes that `libmftah` is already installed.
-    If not, fetch it from https://github.com/NotsoanoNimus/MFTAH. */
-#include "mftah.h"
-
+#include "../../protocol/include/mftah.h"
 
 
 /* Semantic versioning in case we want it. */
@@ -106,16 +100,6 @@
 #define MFTAH_MAX_PW_FILE_LEN_WITH_OVERRIDE  65536
 
 
-
-/* An easy-to-adjust settings enum for the current encryption mode. */
-typedef
-enum {
-    MFTAH_MODE_UNKNOWN   = 0,
-    MFTAH_MODE_ENCRYPT   = (1 << 1),
-    MFTAH_MODE_DECRYPT   = (1 << 2),
-    MFTAH_MODE_REKEY     = (1 << 3)
-} MftahMode;
-
 /* An easy-to-adjust settings enum for the password mode. */
 typedef
 enum {
@@ -128,15 +112,15 @@ enum {
 typedef
 struct {
     /* Controls whether this call of the program is encrypting, rekeying, or decrypting. */
-    MftahMode           Mode;
+    MftahMode	Mode;
     /* Controls forced acceptance of a given password during encryption or rekeying. */
-    bool                ForcePassword;
+    bool		ForcePassword;
     /* Controls the interactivity of the program. Set TRUE by CLI option '-n'. */
-    bool                IsNonInteractive;
+    bool		IsNonInteractive;
     /* If set, suppresses progress markers and debugging information (if enabled). */
-    bool                Quiet;
+    bool		Quiet;
     /* Set the amount of threads to use during encryption/re-keying. */
-    uint8_t             Threads;
+    uint8_t		Threads;
 } MftahOptions;
 
 
@@ -317,7 +301,7 @@ print_progress(const uint64_t *const current_value,
 {
     uint8_t percent_done, percent_by_five;
     double percent_raw;
-    
+
     if (NULL == current_value || NULL == out_of_value || 0 == *out_of_value)
         return;
 
@@ -352,13 +336,14 @@ main(int  argc,
      char *argv[])
 {
     mftah_status_t status = MFTAH_SUCCESS;
+	memset(&sOptions, 0x00, sizeof(sOptions));
 
     DPRINTLN("Initializing.");
     initialize();
 
     DPRINTLN("Evaluating CLI options.");
     evaluate_options(argc, argv);
-    
+
     DPRINTLN("Reading input buffer information.");
     read_input_buffer();
 
@@ -455,7 +440,7 @@ initialize()
 
     mftah_registration_details_t *registration
         = (mftah_registration_details_t *)calloc(1, sizeof(mftah_registration_details_t));
-    
+
     registration->calloc    = calloc;
     registration->malloc    = malloc;
     registration->realloc   = realloc;
@@ -867,7 +852,7 @@ read_input_buffer()
             sDataIn.BufferScroll += bytes_read;
             read_file_size += bytes_read;
 
-            /* If a block size was read, there's likely more data. In that case, make sure the 
+            /* If a block size was read, there's likely more data. In that case, make sure the
                 buffer has room for another block by reallocating it by a power of two. */
             if ((read_file_size + AES_BLOCKLEN) > sDataIn.BufferLength && AES_BLOCKLEN == bytes_read) {
                 sDataIn.BufferLength <<= 1;
@@ -943,7 +928,7 @@ work(void *context)
                                      ctx->sha256_key,
                                      ctx->iv,
                                      &progress);
-    
+
     if (MFTAH_ERROR(status)) {
         ABORT("A failure was reported during the operation. Exit code '%d'.", status);
     }
@@ -984,7 +969,7 @@ spawn_worker(mftah_immutable_protocol_t protocol_instance,
             MFTAH_MAX_THREAD_COUNT
         );
     }
-    
+
     my_thread = &(sThreads[work_order->thread_index]);
 
     my_thread->Context = (CommonThreadContext *)calloc(1, sizeof(CommonThreadContext));
